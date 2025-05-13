@@ -62,7 +62,7 @@ public class SwordManController : MonoBehaviour
     private bool SecondTrigger;
     private bool AtkMove = true;
     private bool Atk2Move = true;
-    private bool CanAtk;
+    public bool CanAtk;
     private bool isBackWalk;
     private bool isLittleWait;
     private bool DefineStatus;

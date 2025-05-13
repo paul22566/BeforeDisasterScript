@@ -53,6 +53,8 @@ public class MonsterBasicData : MonoBehaviour
     private RaycastHit2D LeftPlatformCheck;
     private RaycastHit2D RightPlatformCheck;
 
+    public delegate void CoolDownVar(ref bool Target);
+
     private void Awake()
     {
         //¥X¥Í§PÂ_
