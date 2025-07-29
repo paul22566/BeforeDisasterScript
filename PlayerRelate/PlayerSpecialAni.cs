@@ -12,7 +12,7 @@ public class PlayerSpecialAni : MonoBehaviour
     public GameObject SkillPowerFrame2;
     public GameObject SkillPowerUi2;
     public GameObject SkillPoint4, SkillPoint5;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     public GameObject PlayerSpecialAnimation;
     public GameObject PlayerUI;
     private SkillPowerChangeAni _skillPowerAni;
@@ -48,7 +48,7 @@ public class PlayerSpecialAni : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _aniController = this.GetComponent<PlayerAnimationController>();
+        _aniController = this.GetComponent<OldPlayerAnimationController>();
 
         _skillPowerAni = PlayerUI.GetComponent<SkillPowerChangeAni>();
 

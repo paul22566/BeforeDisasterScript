@@ -50,12 +50,12 @@ public class AimPowerController : MonoBehaviour
     {
         if (!HasStatusSet && _battleSystem.isAim)
         {
-            switch (PlayerController.face)
+            switch (PlayerController._player.face)
             {
-                case PlayerController.Face.Left:
+                case Creature.Face.Left:
                     status = 2;
                     break;
-                case PlayerController.Face.Right:
+                case Creature.Face.Right:
                     status = 1;
                     break;
             }

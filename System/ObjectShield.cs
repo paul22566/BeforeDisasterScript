@@ -75,9 +75,9 @@ public class ObjectShield : MonoBehaviour
         bool XJudge = false;
         bool Judge = false;
 
-        ShieldLine = Distance.CalculateLine(ShieldPoint1.position, ShieldPoint2.position);
-        ObjectLine = Distance.CalculateLine(PlayerAtkTransform.position, ProtectTarget.position);
-        Point = Distance.CalculateCrossPoint(ShieldLine, ObjectLine);
+        ShieldLine = DistanceClass.CalculateLine(ShieldPoint1.position, ShieldPoint2.position);
+        ObjectLine = DistanceClass.CalculateLine(PlayerAtkTransform.position, ProtectTarget.position);
+        Point = DistanceClass.CalculateCrossPoint(ShieldLine, ObjectLine);
         
         if (PlayerAtkTransform.position.x > ProtectTarget.position.x)
         {

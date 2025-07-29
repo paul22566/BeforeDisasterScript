@@ -59,12 +59,12 @@ public class CriticAtkPredict : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        switch (PlayerController.face)
+        switch (PlayerController._player.face)
         {
-            case PlayerController.Face.Right:
+            case Creature.Face.Right:
                 GoRight = true;
                 break;
-            case PlayerController.Face.Left:
+            case Creature.Face.Left:
                 GoLeft = true;
                 break;
         }

@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class StairAniController : MonoBehaviour
 {
     private Transform PlayerTransform;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private PlayerSpecialAni _specialAniController;
     private AniMethod _aniMethod;
     private int EventNumber;
@@ -37,7 +37,7 @@ public class StairAniController : MonoBehaviour
         if (GameObject.Find("player") != null)
         {
             PlayerTransform = GameObject.Find("player").transform;
-            _aniController = GameObject.Find("player").GetComponent<PlayerAnimationController>();
+            _aniController = GameObject.Find("player").GetComponent<OldPlayerAnimationController>();
             _specialAniController = GameObject.Find("player").GetComponent<PlayerSpecialAni>();
         }
         else

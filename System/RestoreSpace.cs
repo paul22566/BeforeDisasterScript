@@ -7,10 +7,10 @@ public class RestoreSpace : MonoBehaviour
 {
     private GameObject playerObject;
     private PlayerController _playerController;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private GameObject DieUI;
     private GameObject FadeOutUI;
-    private itemManage _itemManage;
+    private ItemManage _itemManage;
 
     public GameObject BlackBackground;
     public GameObject WhiteBackground;
@@ -34,9 +34,9 @@ public class RestoreSpace : MonoBehaviour
         DieUI.SetActive(false);
         FadeOutUI.SetActive(false);
         playerObject = GameObject.Find("player");
-        _itemManage = GameObject.Find("FollowSystem").GetComponent<itemManage>();
+        _itemManage = GameObject.Find("FollowSystem").GetComponent<ItemManage>();
         _playerController = playerObject.GetComponent<PlayerController>();
-        _aniController = playerObject.GetComponent<PlayerAnimationController>();
+        _aniController = playerObject.GetComponent<OldPlayerAnimationController>();
         _aniController.ReSetAni();
         _playerController.Hp = playerObject.transform.GetComponent<PlayerController>().MaxHp;
         _playerController.isSaveGame = false;

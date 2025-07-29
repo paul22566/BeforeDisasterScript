@@ -81,7 +81,7 @@ public class SelectButtonController : MonoBehaviour
 
         if (NowHorizontalSelectNumber < MaxHorizontalSelectNumber)
         {
-            if (XboxControllerDetect.isCrossRightPressed || XboxControllerDetect.isControllerRightPressed || Input.GetKeyDown(KeyCode.RightArrow))
+            if (OldVerXboxControllerDetect.isCrossRightPressed || OldVerXboxControllerDetect.isControllerRightPressed || Input.GetKeyDown(KeyCode.RightArrow))
             {
                 ShouldPlayMoveSound = true;
                 NowHorizontalSelectNumber += 1;
@@ -89,7 +89,7 @@ public class SelectButtonController : MonoBehaviour
         }
         if (NowHorizontalSelectNumber > 1)
         {
-            if (XboxControllerDetect.isCrossLeftPressed || XboxControllerDetect.isControllerLeftPressed || Input.GetKeyDown(KeyCode.LeftArrow))
+            if (OldVerXboxControllerDetect.isCrossLeftPressed || OldVerXboxControllerDetect.isControllerLeftPressed || Input.GetKeyDown(KeyCode.LeftArrow))
             {
                 ShouldPlayMoveSound = true;
                 NowHorizontalSelectNumber -= 1;
@@ -97,7 +97,7 @@ public class SelectButtonController : MonoBehaviour
         }
         if (NowVerticalSelectNumber > 1)
         {
-            if (XboxControllerDetect.isCrossUpPressed || XboxControllerDetect.isControllerUpPressed || Input.GetKeyDown(KeyCode.UpArrow))
+            if (OldVerXboxControllerDetect.isCrossUpPressed || OldVerXboxControllerDetect.isControllerUpPressed || Input.GetKeyDown(KeyCode.UpArrow))
             {
                 ShouldPlayMoveSound = true;
                 NowVerticalSelectNumber -= 1;
@@ -105,7 +105,7 @@ public class SelectButtonController : MonoBehaviour
         }
         if (NowVerticalSelectNumber < MaxVerticalSelectNumber)
         {
-            if (XboxControllerDetect.isCrossDownPressed || XboxControllerDetect.isControllerDownPressed || Input.GetKeyDown(KeyCode.DownArrow))
+            if (OldVerXboxControllerDetect.isCrossDownPressed || OldVerXboxControllerDetect.isControllerDownPressed || Input.GetKeyDown(KeyCode.DownArrow))
             {
                 ShouldPlayMoveSound = true;
                 NowVerticalSelectNumber += 1;
@@ -136,7 +136,7 @@ public class SelectButtonController : MonoBehaviour
             case "H":
                 if (Value < Max)
                 {
-                    if (XboxControllerDetect.isCrossRightPressed || Input.GetKeyDown(KeyCode.RightArrow))
+                    if (OldVerXboxControllerDetect.isCrossRightPressed || Input.GetKeyDown(KeyCode.RightArrow))
                     {
                         ShouldPlayMoveSound = true;
                         Value += ChangeNumber;
@@ -144,7 +144,7 @@ public class SelectButtonController : MonoBehaviour
                 }
                 if (Value > Min)
                 {
-                    if (XboxControllerDetect.isCrossLeftPressed || Input.GetKeyDown(KeyCode.LeftArrow))
+                    if (OldVerXboxControllerDetect.isCrossLeftPressed || Input.GetKeyDown(KeyCode.LeftArrow))
                     {
                         ShouldPlayMoveSound = true;
                         Value -= ChangeNumber;
@@ -154,7 +154,7 @@ public class SelectButtonController : MonoBehaviour
             case "V":
                 if (Value > Min)
                 {
-                    if (XboxControllerDetect.isCrossUpPressed || Input.GetKeyDown(KeyCode.UpArrow))
+                    if (OldVerXboxControllerDetect.isCrossUpPressed || Input.GetKeyDown(KeyCode.UpArrow))
                     {
                         ShouldPlayMoveSound = true;
                         Value -= ChangeNumber;
@@ -162,7 +162,7 @@ public class SelectButtonController : MonoBehaviour
                 }
                 if (Value < Max)
                 {
-                    if (XboxControllerDetect.isCrossDownPressed || Input.GetKeyDown(KeyCode.DownArrow))
+                    if (OldVerXboxControllerDetect.isCrossDownPressed || Input.GetKeyDown(KeyCode.DownArrow))
                     {
                         ShouldPlayMoveSound = true;
                         Value += ChangeNumber;

@@ -16,7 +16,7 @@ public class Portal : MonoBehaviour
     public  Face AssignFace;
 
     public bool isButtonPortal;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private InteractableObject _interactable;
 
     private enum PortalTarget { Loading, Restore, Title};
@@ -26,7 +26,7 @@ public class Portal : MonoBehaviour
     {
         if (GameObject.Find("player") != null)
         {
-            _aniController = GameObject.Find("player").GetComponent<PlayerAnimationController>();
+            _aniController = GameObject.Find("player").GetComponent<OldPlayerAnimationController>();
         }
         else
         {
@@ -67,12 +67,12 @@ public class Portal : MonoBehaviour
         switch (AssignFace)
         {
             case Face.Null:
-                switch (PlayerController.face)
+                switch (PlayerController._player.face)
                 {
-                    case PlayerController.Face.Right:
+                    case Creature.Face.Right:
                         BackgroundSystem.PlayerAssignFace = BackgroundSystem.Face.Right;
                         break;
-                    case PlayerController.Face.Left:
+                    case Creature.Face.Left:
                         BackgroundSystem.PlayerAssignFace = BackgroundSystem.Face.Left;
                         break;
                 }

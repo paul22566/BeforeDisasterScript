@@ -62,7 +62,7 @@ public class SwordManController : MonoBehaviour
     private bool SecondTrigger;
     private bool AtkMove = true;
     private bool Atk2Move = true;
-    public bool CanAtk;
+    private bool CanAtk;
     private bool isBackWalk;
     private bool isLittleWait;
     private bool DefineStatus;
@@ -97,7 +97,7 @@ public class SwordManController : MonoBehaviour
     private Transform MonsterBeBlockTr;
     //•D∞ ÆÊ¿…
     private bool CanBlock;
-    private float BlockCoolDown = 10;
+    private float BlockCoolDown = 15;
     private float BlockLastTime;
     private GameObject MonsterBlockAnimation;
     private Animator MonsterBlockAni;
@@ -259,6 +259,8 @@ public class SwordManController : MonoBehaviour
                     if (_hurtedController.HurtedByFarAtk)
                     {
                         SlowWalkTimer = 0;
+                        BlockLastTime = _time - 5;
+                        CanBlock = false;
                         StatusJudge(Status.walk);
                         _basicData.TurnFaceJudge();
                     }
@@ -270,6 +272,8 @@ public class SwordManController : MonoBehaviour
                     if (_basicData.AbsDistanceX < ChasingDistance && _basicData.AbsDistanceY <= 2)
                     {
                         SlowWalkTimer = 0;
+                        BlockLastTime = _time - 5;
+                        CanBlock = false;
                         StatusJudge(Status.walk);
                         _basicData.TurnFaceJudge();
                     }

@@ -8,7 +8,7 @@ public class InvincibleAni : MonoBehaviour
     public float InvincibleTimerSet;
     private float InvincibleTimer;
     private PlayerController _playerController;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private SpriteRenderer[] MoveSpr = new SpriteRenderer[15];
     private SpriteRenderer[] AtkSpr = new SpriteRenderer[15];
     private SpriteRenderer[] JumpSpr = new SpriteRenderer[15];
@@ -38,7 +38,7 @@ public class InvincibleAni : MonoBehaviour
         SprListInitialize(SecondAtkSpr, 5);
         SprListInitialize(ImpulseJumpSpr, 15);
         _playerController = this.GetComponent<PlayerController>();
-        _aniController = this.GetComponent<PlayerAnimationController>();
+        _aniController = this.GetComponent<OldPlayerAnimationController>();
     }
 
     // Update is called once per frame
@@ -52,64 +52,64 @@ public class InvincibleAni : MonoBehaviour
                 {
                     switch (_aniController.NowAni)
                     {
-                        case PlayerAnimationController.AniStatus.Wait:
+                        case OldPlayerAnimationController.AniStatus.Wait:
                             MoveSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Walk:
+                        case OldPlayerAnimationController.AniStatus.Walk:
                             MoveSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.WalkThrow:
+                        case OldPlayerAnimationController.AniStatus.WalkThrow:
                             MoveSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Atk:
+                        case OldPlayerAnimationController.AniStatus.Atk:
                             AtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Jump:
+                        case OldPlayerAnimationController.AniStatus.Jump:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Fall:
+                        case OldPlayerAnimationController.AniStatus.Fall:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpAtk:
+                        case OldPlayerAnimationController.AniStatus.JumpAtk:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpCAtk:
+                        case OldPlayerAnimationController.AniStatus.JumpCAtk:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpThrow:
+                        case OldPlayerAnimationController.AniStatus.JumpThrow:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Restore:
+                        case OldPlayerAnimationController.AniStatus.Restore:
                             RestoreSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.CocktailCriticAtk:
+                        case OldPlayerAnimationController.AniStatus.CocktailCriticAtk:
                             CocktailCriticAtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.CAtk:
+                        case OldPlayerAnimationController.AniStatus.CAtk:
                             CAtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Throw:
+                        case OldPlayerAnimationController.AniStatus.Throw:
                             ThrowSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.ShootWait:
+                        case OldPlayerAnimationController.AniStatus.ShootWait:
                             ShootSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Shoot:
+                        case OldPlayerAnimationController.AniStatus.Shoot:
                             ShootSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpShoot:
+                        case OldPlayerAnimationController.AniStatus.JumpShoot:
                             ShootSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Block:
+                        case OldPlayerAnimationController.AniStatus.Block:
                             BlockSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.SecondJump:
+                        case OldPlayerAnimationController.AniStatus.SecondJump:
                             SecondJumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.SecondAtk:
+                        case OldPlayerAnimationController.AniStatus.SecondAtk:
                             SecondAtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.ImpulseJump:
+                        case OldPlayerAnimationController.AniStatus.ImpulseJump:
                             ImpulseJumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
                     }
@@ -125,64 +125,64 @@ public class InvincibleAni : MonoBehaviour
                 {
                     switch (_aniController.NowAni)
                     {
-                        case PlayerAnimationController.AniStatus.Wait:
+                        case OldPlayerAnimationController.AniStatus.Wait:
                             MoveSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Walk:
+                        case OldPlayerAnimationController.AniStatus.Walk:
                             MoveSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.WalkThrow:
+                        case OldPlayerAnimationController.AniStatus.WalkThrow:
                             MoveSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Atk:
+                        case OldPlayerAnimationController.AniStatus.Atk:
                             AtkSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Jump:
+                        case OldPlayerAnimationController.AniStatus.Jump:
                             JumpSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Fall:
+                        case OldPlayerAnimationController.AniStatus.Fall:
                             JumpSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpAtk:
+                        case OldPlayerAnimationController.AniStatus.JumpAtk:
                             JumpSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpCAtk:
+                        case OldPlayerAnimationController.AniStatus.JumpCAtk:
                             JumpSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpThrow:
+                        case OldPlayerAnimationController.AniStatus.JumpThrow:
                             JumpSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Restore:
+                        case OldPlayerAnimationController.AniStatus.Restore:
                             RestoreSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.CocktailCriticAtk:
+                        case OldPlayerAnimationController.AniStatus.CocktailCriticAtk:
                             CocktailCriticAtkSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.CAtk:
+                        case OldPlayerAnimationController.AniStatus.CAtk:
                             CAtkSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Throw:
+                        case OldPlayerAnimationController.AniStatus.Throw:
                             ThrowSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.ShootWait:
+                        case OldPlayerAnimationController.AniStatus.ShootWait:
                             ShootSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Shoot:
+                        case OldPlayerAnimationController.AniStatus.Shoot:
                             ShootSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpShoot:
+                        case OldPlayerAnimationController.AniStatus.JumpShoot:
                             ShootSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.Block:
+                        case OldPlayerAnimationController.AniStatus.Block:
                             BlockSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.SecondJump:
+                        case OldPlayerAnimationController.AniStatus.SecondJump:
                             SecondJumpSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.SecondAtk:
+                        case OldPlayerAnimationController.AniStatus.SecondAtk:
                             SecondAtkSpr[i].color = new Color(1, 1, 1, 1);
                             break;
-                        case PlayerAnimationController.AniStatus.ImpulseJump:
+                        case OldPlayerAnimationController.AniStatus.ImpulseJump:
                             ImpulseJumpSpr[i].color = new Color(1, 1, 1, 1);
                             break;
                     }
@@ -194,64 +194,64 @@ public class InvincibleAni : MonoBehaviour
                 {
                     switch (_aniController.NowAni)
                     {
-                        case PlayerAnimationController.AniStatus.Wait:
+                        case OldPlayerAnimationController.AniStatus.Wait:
                             MoveSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Walk:
+                        case OldPlayerAnimationController.AniStatus.Walk:
                             MoveSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.WalkThrow:
+                        case OldPlayerAnimationController.AniStatus.WalkThrow:
                             MoveSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Atk:
+                        case OldPlayerAnimationController.AniStatus.Atk:
                             AtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Jump:
+                        case OldPlayerAnimationController.AniStatus.Jump:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Fall:
+                        case OldPlayerAnimationController.AniStatus.Fall:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpAtk:
+                        case OldPlayerAnimationController.AniStatus.JumpAtk:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpCAtk:
+                        case OldPlayerAnimationController.AniStatus.JumpCAtk:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpThrow:
+                        case OldPlayerAnimationController.AniStatus.JumpThrow:
                             JumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Restore:
+                        case OldPlayerAnimationController.AniStatus.Restore:
                             RestoreSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.CocktailCriticAtk:
+                        case OldPlayerAnimationController.AniStatus.CocktailCriticAtk:
                             CocktailCriticAtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.CAtk:
+                        case OldPlayerAnimationController.AniStatus.CAtk:
                             CAtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Throw:
+                        case OldPlayerAnimationController.AniStatus.Throw:
                             ThrowSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.ShootWait:
+                        case OldPlayerAnimationController.AniStatus.ShootWait:
                             ShootSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Shoot:
+                        case OldPlayerAnimationController.AniStatus.Shoot:
                             ShootSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.JumpShoot:
+                        case OldPlayerAnimationController.AniStatus.JumpShoot:
                             ShootSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.Block:
+                        case OldPlayerAnimationController.AniStatus.Block:
                             BlockSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.SecondJump:
+                        case OldPlayerAnimationController.AniStatus.SecondJump:
                             SecondJumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.SecondAtk:
+                        case OldPlayerAnimationController.AniStatus.SecondAtk:
                             SecondAtkSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
-                        case PlayerAnimationController.AniStatus.ImpulseJump:
+                        case OldPlayerAnimationController.AniStatus.ImpulseJump:
                             ImpulseJumpSpr[i].color = new Color(1, 1, 1, 0.5f);
                             break;
                     }
@@ -265,64 +265,64 @@ public class InvincibleAni : MonoBehaviour
             {
                 switch (_aniController.NowAni)
                 {
-                    case PlayerAnimationController.AniStatus.Wait:
+                    case OldPlayerAnimationController.AniStatus.Wait:
                         MoveSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Walk:
+                    case OldPlayerAnimationController.AniStatus.Walk:
                         MoveSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.WalkThrow:
+                    case OldPlayerAnimationController.AniStatus.WalkThrow:
                         MoveSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Atk:
+                    case OldPlayerAnimationController.AniStatus.Atk:
                         AtkSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Jump:
+                    case OldPlayerAnimationController.AniStatus.Jump:
                         JumpSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Fall:
+                    case OldPlayerAnimationController.AniStatus.Fall:
                         JumpSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.JumpAtk:
+                    case OldPlayerAnimationController.AniStatus.JumpAtk:
                         JumpSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.JumpCAtk:
+                    case OldPlayerAnimationController.AniStatus.JumpCAtk:
                         JumpSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.JumpThrow:
+                    case OldPlayerAnimationController.AniStatus.JumpThrow:
                         JumpSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Restore:
+                    case OldPlayerAnimationController.AniStatus.Restore:
                         RestoreSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.CocktailCriticAtk:
+                    case OldPlayerAnimationController.AniStatus.CocktailCriticAtk:
                         CocktailCriticAtkSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.CAtk:
+                    case OldPlayerAnimationController.AniStatus.CAtk:
                         CAtkSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Throw:
+                    case OldPlayerAnimationController.AniStatus.Throw:
                         ThrowSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.ShootWait:
+                    case OldPlayerAnimationController.AniStatus.ShootWait:
                         ShootSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Shoot:
+                    case OldPlayerAnimationController.AniStatus.Shoot:
                         ShootSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.JumpShoot:
+                    case OldPlayerAnimationController.AniStatus.JumpShoot:
                         ShootSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.Block:
+                    case OldPlayerAnimationController.AniStatus.Block:
                         BlockSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.SecondJump:
+                    case OldPlayerAnimationController.AniStatus.SecondJump:
                         SecondJumpSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.SecondAtk:
+                    case OldPlayerAnimationController.AniStatus.SecondAtk:
                         SecondAtkSpr[i].color = new Color(1, 1, 1, 1);
                         break;
-                    case PlayerAnimationController.AniStatus.ImpulseJump:
+                    case OldPlayerAnimationController.AniStatus.ImpulseJump:
                         ImpulseJumpSpr[i].color = new Color(1, 1, 1, 1);
                         break;
                 }

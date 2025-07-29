@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using UnityEngine;
 using UnityEngine.UI;
+using static PlayerCommandManager;
+using static Creature;
 
 public class PlayerController : MonoBehaviour
 {
@@ -20,23 +21,26 @@ public class PlayerController : MonoBehaviour
     public static float PlayerPlaceY;
     private Vector2 MoveDirection = new Vector2(1, 0);
     private Vector2 MoveDirectionDefault = new Vector2(1, 0);
-
-    [Header("系統參數")]
-    private Transform _transform;
     private float _deltaTime;
     private float _fixedDeltaTime;
+    private float _time;
+
+    [Header("系統參數")]
+    public static Player _player = new Player();
+    private PlayerAniController _aniController;
+    private PlayerBuffManager _buffManager;
+    [HideInInspector] public Transform _transform;
     public static Rigidbody2D Rigid2D;//有被其他script用到(ghostAtk，normalMonsterAtk，Fireball，BattleSystem, playerUnderJudgement)
-    [HideInInspector] public BoxCollider2D BoxCollider;//有被其他script用到(dashJudgement)
+    [HideInInspector] public BoxCollider2D _boxCollider;//有被其他script用到(dashJudgement)
     private BattleSystem _battleSystem;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _OldAniController;
     private PlayerSpecialAni _specialAni;
     private PlayerCapturedAnimation _captruedController;
     private PlayerSE _playerSE;
     public PlayerTouchJudgement _playerTouchJudgement;
     public SlopeControll _slopeControll;
-    public itemManage _itemManage;
+    public ItemManage _itemManage;
     private GameObject CommonCollider;
-    private Transform UICanvas;
     public Image HpUI;
     public Image SkillPowerUI;//有被其他script用到(PlayerSpecialAni)
     public Image SkillPowerUI2;
@@ -44,7 +48,6 @@ public class PlayerController : MonoBehaviour
     public GameObject AtkBuffUI;
     public GameObject DefendBuffUI;
     public GameObject PowerSealUI;
-    private int JumpForceCount;
     public float InvincibleTimerSet;//script(battleSystem)
     public float BlockAtkInvicibleTimerSet;
     private float InvincibleTimer;
@@ -54,17 +57,14 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public float DieTimer;//有被其他script用到(BackGroundSystem)
     private float RestoreTimer;
     public float RestoreTimerSet;
-    private float LongFallTimer;
     private float LongFallTimerSet = 1.1f;
-    private float LongFallWaitTimer;
     private float LongFallWaitTimerSet = 1;
-    private int JumpCount;
+    [HideInInspector] public int JumpCount;
     private RaycastHit2D GroundCheck;
     private RaycastHit2D SpecialGroundCheck;
     private RaycastHit2D CeilingCheck;
     private RaycastHit2D SpecialCeilingCheck;
-    public enum Face {Right,Left };
-    public static Face face;//有被其他script用到(FaceJudgement，playerAtkScript，Cocktail，AimPowerController，玩家攻擊的Follow，BattleSystem，PlayerAnimationController)
+
     private PlayerData _PlayerData;
     private int MonsterDamageRecord;
     private float MonsterImpulseXRecord;
@@ -77,8 +77,7 @@ public class PlayerController : MonoBehaviour
     private PlayerDieController DieUI;
     private GameObject Item;
     private ItemWindow _itemWindow;
-    private KeyCodeManage _keyCodeManage;
-
+    private InputManager _inputManager;
 
     //開關
     public static bool isGround;//是否接觸地面 其他script有用到(BattleSystem，EvilKingController)
@@ -93,32 +92,23 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public bool isSaveGame = false;//有被其他script用到(CheckPoint，RestPlace)
     [HideInInspector] public bool touchLeftWall;//有被其他script用到(backgroundsystem，DashJudgement，playerleftJudgement)
     [HideInInspector] public bool touchRightWall;//有被其他script用到(backgroundsystem，DashJudgement，playerRightJudgement)
-    [HideInInspector] public bool canTurn = true;//控制能否轉向 有被其他script用到(BattleSystem)
     [HideInInspector] public bool CantDoAnyThing;//不能做其他事的開關 有被其他script用到(battleSystem，moveAtk，restoreSpace)
     [HideInInspector] public bool OnlyCanMove;//與CantDoAnyThing放在一起 有被其他script用到(battleSystem)
     [HideInInspector] public bool isKeyZPressed;//有沒有按著Z鍵 script(backGroundSystem)
     [HideInInspector] public bool isWalking;//是不是在走路 (invincibleTime)
-    private bool ShouldWalkRight;//是否應當往右走
-    private bool ShouldWalkLeft;
     [HideInInspector] public bool isCeiling;
-    private bool canJump;//是不是處在可以跳躍的狀態(第一次)
-    private bool canSecondJump;//能不能第2段跳
-    private bool IgnoreGravity;//是否無視重力
+    private bool isIgnoreGravity;//是否無視重力
     [HideInInspector] public bool ShouldIgnoreGravity;//是否應當無視重力
     [HideInInspector] public bool isSecondJump;
     [HideInInspector] public bool isJump;
     [HideInInspector] public bool isFall;
     [HideInInspector] public bool isSecondFall;
-    [HideInInspector] public bool isLongFall;
     [HideInInspector] public bool TouchNormalGround;
     [HideInInspector] public bool TouchGrassGround;
     [HideInInspector] public bool TouchMetalGround;
+    [HideInInspector] public bool CanDash;
     private bool TouchGroundDragSet = true;
-    private bool JumpTouchCeilling;
-    private bool isDecreaseJumpCount;//防止碰地前多扣跳躍次數
-    private bool isDashOnGround;
     private bool RestoreTimerSwitch;
-    private bool isJumpForceRun;
     private bool isDieUIAppear;
     private bool DieByCapture;
     private bool RestoreUsed;
@@ -142,10 +132,56 @@ public class PlayerController : MonoBehaviour
     public float DashSpeed;
     public float DashCoolDown;
     public float DashEndPushPower;
-    private float DashTimeLeft;
-    private float LastDash = -10;
+    private float LastDashTime = -10;
 
-    [HideInInspector] public bool isCheat;
+    public HashSet<PlayerStatus> UpdateOperateCommands = new HashSet<PlayerStatus>();
+    public HashSet<PlayerStatus> FixedUpdateOperateCommands = new HashSet<PlayerStatus>();
+
+    public HashSet<Buff> RunningBuffs = new HashSet<Buff>();
+
+    //狀態
+    private PlayerWaitStatus _waitStatus;
+    private PlayerGlidingStatus _glidingStatus;
+    private PlayerFallWaitStatus _fallWaitStatus;
+    private PlayerRightMoveStatus _rightMoveStatus;
+    private PlayerLeftMoveStatus _leftMoveStatus;
+    private PlayerDashStatus _dashStatus;
+    private PlayerAcumulateStatus _accumulateStatus;
+    private PlayerNormalAtkStatus _normalAtkStatus;
+    private PlayerStrongAtkStatus _strongAtkStatus;
+    private PlayerJumpAtkStatus _jumpAtkStatus;
+    private PlayerJumpStatus _jumpStatus;
+    private PlayerLeftWalkThrowStatus _leftWalkThrow;
+    private PlayerRightWalkThrowStatus _rightWalkThrow;
+    private PlayerJumpThrowStatus _jumpThrowStatus;
+    private PlayerUseNormalItemStatus _useNormalItemStatus;
+    private PlayerUseThrowItemStatus _throwItemStatus;
+    private PlayerShootStatus _shootStatus;
+
+    private PlayerUseItemStart _useItemStart;
+    private PlayerAimStop _aimStop;
+    private PlayerChangeItem _changeItem;
+    private PlayerMoveStop _rightMoveStop;
+    private PlayerMoveStop _leftMoveStop;
+    private PlayerAcumulateStop _accumulateStop;
+    private PlayerJumpStop _jumpStop;
+
+    private PlayerAimLineAnimation _aimLineAnimation;
+
+    private AnimationController NowPlayingAni;
+
+    public GameObject AccumulateLight;
+    public GameObject SecondJumpFire;
+    public GameObject AimCocktailImage;
+    public GameObject AimExplosionBottleImage;
+    public GameObject WalkThrowCocktailImage;
+    public GameObject WalkThrowExplosionBottleImage;
+    public GameObject JumpThrowCocktailImage;
+    public GameObject JumpThrowExplosionBottleImage;
+    public Transform RitualSwordParticle;
+
+    private float SecondJumpTimerSet = 0.66f;
+
     public TestGameSpeed _gameSpeed;
 
     void Start()
@@ -155,19 +191,15 @@ public class PlayerController : MonoBehaviour
         _transform = transform;
         _itemManage.RestoreUseItem();
         Rigid2D = this.gameObject.GetComponent<Rigidbody2D>();
-        BoxCollider = this.gameObject.GetComponent<BoxCollider2D>();
+        _boxCollider = this.gameObject.GetComponent<BoxCollider2D>();
         _battleSystem = this.gameObject.GetComponent<BattleSystem>();
-        _aniController = this.GetComponent<PlayerAnimationController>();
+        _OldAniController = this.GetComponent<OldPlayerAnimationController>();
         _specialAni = this.GetComponent<PlayerSpecialAni>();
         _captruedController = this.GetComponent<PlayerCapturedAnimation>();
         _playerSE = _transform.GetChild(3).GetComponent<PlayerSE>();
         CommonCollider = _transform.GetChild(4).gameObject;
 
-        face = Face.Right;
-
         DieTimer = DieTimerSet;
-        LongFallTimer = LongFallTimerSet;
-        LongFallWaitTimer = LongFallWaitTimerSet;
         if (GameEvent.AbsorbBoss2)
         {
             SkillPowerUI = SkillPowerUI2;
@@ -175,14 +207,14 @@ public class PlayerController : MonoBehaviour
 
         if (GameObject.FindGameObjectWithTag("UI") != null)
         {
-            UICanvas = GameObject.FindGameObjectWithTag("UI").transform;
-            _keyCodeManage = UICanvas.GetComponent<KeyCodeManage>();
+            Transform UICanvas = GameObject.FindGameObjectWithTag("UI").transform;
 
             DieUI = IdentifyID.FindObject(UICanvas, UIID.Die).GetComponent<PlayerDieController>();
             Item = IdentifyID.FindObject(UICanvas, UIID.Item);
             _itemWindow = Item.GetComponent<ItemWindow>();
         }
-            
+        NewPlayerDataInisialize();
+
         if (_PlayerData == null)
         {
             if (GameObject.Find("FollowSystem") != null)
@@ -195,18 +227,19 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         //測試
-        if (Input.GetKeyDown(KeyCode.L))
+        if (Input.GetKeyDown(KeyCode.L) && GameEvent.OpenCheat)
         {
-            /*_gameSpeed.ChangeGameSpeed();
-            print("測試專用變速");*/
+            _gameSpeed.ChangeGameSpeed();
+            print("測試專用變速");
         }
-        if (Input.GetKeyDown(KeyCode.K))
+        if (Input.GetKeyDown(KeyCode.K) && GameEvent.OpenCheat)
         {
-            /*BackgroundSystem.BasicGameSpeed = 1;
-            print("測試專用回復速度");*/
+            BackgroundSystem.BasicGameSpeed = 1;
+            print("測試專用回復速度");
         }
 
         _deltaTime = Time.deltaTime;
+        _time = Time.time;
         //避免為負or超過
         if (Hp <= 0)
         {
@@ -267,7 +300,7 @@ public class PlayerController : MonoBehaviour
         }
 
         //重力控制
-        GravityJudge();
+        OldDragJudge();
 
         if (isGround && isImpulse)
         {
@@ -276,19 +309,6 @@ public class PlayerController : MonoBehaviour
         InvincibleTimerMethod();
         HurtedTimerMethod();
         Die();
-        AccumulateBreak();
-
-        //互動
-        if (Input.GetKeyDown(KeyCodeManage.Interact) || _keyCodeManage.InteractPressed)
-        {
-            isUpArrowPressed = true;
-            _keyCodeManage.InteractPressed = false;
-        }
-        if (Input.GetKeyUp(KeyCodeManage.Interact) || _keyCodeManage.InteractUp)
-        {
-            isUpArrowPressed = false;
-            _keyCodeManage.InteractUp = false;
-        }
 
         UIControll();
 
@@ -303,26 +323,19 @@ public class PlayerController : MonoBehaviour
             CommonCollider.SetActive(true);
         }
 
-        isWalking = false;
+        JudgeMoveDirection();
+        PlayAnimation();
 
-        //玩家操作
-        PlayerOperate();
+        if (_time >= (LastDashTime + DashCoolDown))
+        {
+            CanDash = true;
+        }
 
         //重置
         if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace)
         {
             if (!PauseMenuController.isPauseMenuOpen)
             {
-                //跳躍判定
-                canSecondJump = false;
-                JumpCount = JumpCountSet;
-                isJump = false;
-                isSecondJump = false;
-                isSecondFall = false;
-                isFall = false;
-                _aniController.isSecondJumpFireAppear = false;
-                canJump = true;
-                isDecreaseJumpCount = false;
                 //蓄力
                 _battleSystem.isAccumulate = false;
                 _battleSystem.AccumulateTimerSwitch = false;
@@ -332,9 +345,7 @@ public class PlayerController : MonoBehaviour
                 isRestore = false;
                 RestoreTimerSwitch = false;
                 //雜項
-                BoxCollider.isTrigger = false;
-                LongFallTimer = LongFallTimerSet;
-                isLongFall = false;
+                _boxCollider.isTrigger = false;
                 isDash = false;
                 CantDoAnyThing = false;
                 ShouldJudgeHurt = false;
@@ -350,7 +361,7 @@ public class PlayerController : MonoBehaviour
 
             if (Portal.isPortal || RestPlace.isOpenRestPlace)
             {
-                _aniController.WaitAniPlay();
+                _OldAniController.WaitAniPlay();
             }
 
             _playerSE.TurnOffLoopSE();
@@ -365,6 +376,10 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        AddDefaultMode();
+        OperateCommand(UpdateOperateCommands, _deltaTime);
+        OperateBuff(RunningBuffs, _deltaTime);
+
         if (HurtingByMoveAtk)
         {
             //蓄力
@@ -372,48 +387,9 @@ public class PlayerController : MonoBehaviour
             _battleSystem.AccumulateTimerSwitch = false;
             _battleSystem.isAccumulateComplete = false;
 
-            LongFallTimer = LongFallTimerSet;
-            isLongFall = false;
             isDash = false;
         }
 
-        //長時間墜落控制
-        if (isGround)
-        {
-            LongFallTimer = LongFallTimerSet;
-            if (isLongFall)
-            {
-                LongFallWaitTimer -= _deltaTime;
-                CantDoAnyThing = true;
-                if (isHurted)
-                {
-                    LongFallWaitTimer = LongFallWaitTimerSet;
-                    isLongFall = false;
-                }
-                if (LongFallWaitTimer <= 0)
-                {
-                    LongFallWaitTimer = LongFallWaitTimerSet;
-                    CantDoAnyThing = false;
-                    isLongFall = false;
-                }
-            }
-        }
-        else
-        {
-            if (isFall || isSecondFall)
-            {
-                LongFallTimer -= _deltaTime;
-                if (LongFallTimer <= 0)
-                {
-                    isLongFall = true;
-                }
-            }
-            if (canSecondJump || isDash || _battleSystem.isJumpThrow || _battleSystem.isImpulseJump || _battleSystem.isJumpAtk || _battleSystem.isJumpCAtk)
-            {
-                LongFallTimer = LongFallTimerSet;
-                isLongFall = false;
-            }
-        }
         //受傷控制
         HurtedControll();
 
@@ -433,46 +409,9 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        //集氣中斷
-        AccumulateBreak();
         //跳躍判斷
-        if (isGround)
-        {
-            canSecondJump = false;
-            JumpCount = JumpCountSet;
-            isJump = false;
-            isSecondJump = false;
-            isSecondFall = false;
-            isFall = false;
-            _aniController.isSecondJumpFireAppear = false;
-        }
-        if (isGround && !isKeyZPressed)
-        {
-            canJump = true;
-            isDecreaseJumpCount = false;
-        }
-        if (Rigid2D.velocity.y < 0)
-        {
-            if (isSecondJump)
-            {
-                if (!_slopeControll.onRightSlope && !_slopeControll.onLeftSlope)
-                {
-                    isSecondFall = true;
-                }
-            }
-            else
-            {
-                if(!_slopeControll.onRightSlope && !_slopeControll.onLeftSlope)
-                {
-                    isFall = true;
-                }
-            }
-        }
-        //跳躍限制
-        if (isCeiling)
-        {
-            JumpTouchCeilling = true;
-        }
+        JumpCountJudge();
+
         //是否互進行互動判斷
         if (isUpArrowPressed && !isDash && !_battleSystem.isAim)
         {
@@ -497,29 +436,28 @@ public class PlayerController : MonoBehaviour
         {
             
         }
-        if (Input.GetKeyDown(KeyCode.M))
+        if (Input.GetKeyDown(KeyCode.M) && GameEvent.OpenCheat)
         {
             _itemManage.CocktailNumber += 1;
             _itemManage.ExplosionBottleNumber += 1;
             _battleSystem.SkillPower += 900;
             GameEvent.TutorialComplete = true;
+            BattleSystem.NormalAtkHurtPower = 100;
         }
-        if (Input.GetKey(KeyCode.H) && Input.GetKey(KeyCode.P))
+        if (Input.GetKey(KeyCode.H) && Input.GetKey(KeyCode.P) && GameEvent.OpenCheat)
         {
             MaxHp = 2000;
             Hp = 2000;
-            isCheat = true;
         }
         if (Input.GetKey(KeyCode.I) && Input.GetKey(KeyCode.M))
         {
-            BattleSystem.NormalAtkHurtPower = 100;
-            isCheat = true;
+            GameEvent.OpenCheat = true;
         }
         if (Input.GetKeyDown(KeyCode.O) && Input.GetKey(KeyCode.R))
         {
             MaxHp = 200;
             BattleSystem.NormalAtkHurtPower = 10;
-            isCheat = false;
+            GameEvent.OpenCheat = false;
         }
     }
 
@@ -532,63 +470,14 @@ public class PlayerController : MonoBehaviour
 
         _fixedDeltaTime = Time.fixedDeltaTime;
 
-        JudgeMoveDirection();
-        
-        Dash();
+        FixedOperateCommand(FixedUpdateOperateCommands, _fixedDeltaTime);
 
         RestoreTimerMethod();
-
-        if (isDash)
-        {
-            return;
-        }
-        
-        if (isWalking && !GameEvent.isAniPlay)
-        {
-            GroundMovement();
-        }
-
-        if (isJumpForceRun)
-        {
-            JumpForceCount += 1;
-        }
-        
-        if (isKeyZPressed && JumpCount > 0 && !CantDoAnyThing)
-        {
-            jump();
-        }
-        else if (isKeyZPressed && JumpCount > 0 && _battleSystem.isAim)
-        {
-            _battleSystem.isAim = false;
-            CantDoAnyThing = false;
-            jump();
-        }
-        else if (isKeyZPressed && JumpCount > 0 && isRestore)
-        {
-            isRestore = false;
-            CantDoAnyThing = false;
-            RestoreTimerSwitch = false;
-            jump();
-        }
     }
-    void JudgeMoveDirection()
+
+    private void JudgeMoveDirection()
     {
         bool ShouldReset = false;
-
-        if (!touchRightWall && !ReceiveLeftWalkCommand && !_playerTouchJudgement.isRightSideHaveMonster)
-        {
-            if (ReceiveRightWalkCommand)
-            {
-                ShouldWalkRight = true;
-            }
-        }
-        if (!touchLeftWall && !ReceiveRightWalkCommand && !_playerTouchJudgement.isLeftSideHaveMonster)
-        {
-            if (ReceiveLeftWalkCommand)
-            {
-                ShouldWalkLeft = true;
-            }
-        }
 
         if (isJump)
         {
@@ -602,11 +491,11 @@ public class PlayerController : MonoBehaviour
 
         if (!_slopeControll.onLeftSlope && !_slopeControll.onRightSlope)
         {
-            if (face == Face.Left && _slopeControll.RightDetecterOnLeftSlope)
+            if (_player.face == Face.Left && _slopeControll.RightDetecterOnLeftSlope)
             {
                 ShouldReset = true;
             }
-            if (face == Face.Right && _slopeControll.LeftDetecterOnRightSlope)
+            if (_player.face == Face.Right && _slopeControll.LeftDetecterOnRightSlope)
             {
                 ShouldReset = true;
             }
@@ -615,7 +504,7 @@ public class PlayerController : MonoBehaviour
         //Dash特殊狀況重置
         if (isDash)
         {
-            switch (face)
+            switch (_player.face)
             {
                 case Face.Left:
                     if (_slopeControll.onRightSlope)
@@ -643,7 +532,7 @@ public class PlayerController : MonoBehaviour
         //左斜坡
         if (_slopeControll.onLeftSlope)
         {
-            switch (face)
+            switch (_player.face)
             {
                 case Face.Right:
                     MoveDirection = new Vector2(_slopeControll.LeftDirection.x, -_slopeControll.LeftDirection.y);
@@ -655,7 +544,7 @@ public class PlayerController : MonoBehaviour
         }
         else if (_slopeControll.RightDetecterOnLeftSlope)
         {
-            if (face == Face.Right)
+            if (_player.face == Face.Right)
             {
                 MoveDirection = new Vector2(_slopeControll.RightDirection.x, -_slopeControll.RightDirection.y);
             }
@@ -664,7 +553,7 @@ public class PlayerController : MonoBehaviour
         //右斜坡
         if (_slopeControll.onRightSlope)
         {
-            switch (face)
+            switch (_player.face)
             {
                 case Face.Right:
                     MoveDirection = new Vector2(_slopeControll.RightDirection.x, -_slopeControll.RightDirection.y);
@@ -676,7 +565,7 @@ public class PlayerController : MonoBehaviour
         }
         else if (_slopeControll.LeftDetecterOnRightSlope)
         {
-            if (face == Face.Left)
+            if (_player.face == Face.Left)
             {
                 MoveDirection = new Vector2(_slopeControll.LeftDirection.x, _slopeControll.LeftDirection.y);
             }
@@ -691,36 +580,36 @@ public class PlayerController : MonoBehaviour
             return;
         }
     }
-
-    //地面移動
-    void GroundMovement()
+    private bool RightMoveJudge()
     {
-        //這裡不涉及圖片方向
-        if (ShouldWalkRight)
+        if (!touchRightWall && !_playerTouchJudgement.isRightSideHaveMonster)
         {
-            if (_battleSystem.isShooting)
-            {
-                _transform.position = new Vector3(ShootingSpeed * MoveDirection.x * _fixedDeltaTime + _transform.position.x, ShootingSpeed * MoveDirection.y * _fixedDeltaTime + _transform.position.y, 0);
-            }
-            else
-            {
-                _transform.position = new Vector3(Speed * MoveDirection.x * _fixedDeltaTime + _transform.position.x, Speed * MoveDirection.y * _fixedDeltaTime + _transform.position.y, 0);
-            }
-        }
-        if (ShouldWalkLeft)
-        {
-            if (_battleSystem.isShooting)
-            {
-                _transform.position = new Vector3(-ShootingSpeed * MoveDirection.x * _fixedDeltaTime + _transform.position.x, ShootingSpeed * MoveDirection.y * _fixedDeltaTime + _transform.position.y, 0);
-            }
-            else
-            {
-                _transform.position = new Vector3(-Speed * MoveDirection.x * _fixedDeltaTime + _transform.position.x, Speed * MoveDirection.y * _fixedDeltaTime + _transform.position.y, 0);
-            }
+            return true;
         }
 
-        ShouldWalkLeft = false;
-        ShouldWalkRight = false;
+        return false;
+    }
+    private bool LeftMoveJudge()
+    {
+        if (!touchLeftWall && !_playerTouchJudgement.isLeftSideHaveMonster)
+        {
+            return true;
+        }
+
+        return false;
+    }
+    private void Move(float speed, float deltaTime)
+    {
+        if(speed > 0 && !RightMoveJudge())
+        {
+            return;
+        }
+        if (speed < 0 && !LeftMoveJudge())
+        {
+            return;
+        }
+
+        _transform.position = new Vector3(speed * MoveDirection.x * deltaTime + _transform.position.x, speed * MoveDirection.y * deltaTime + _transform.position.y, 0);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -745,16 +634,6 @@ public class PlayerController : MonoBehaviour
         {
             touchRightWall = false;
         }
-        if (collision.gameObject.tag == "platform" || collision.gameObject.tag == "SpecialPlatform")
-        {
-            if (!isKeyZPressed && !isDecreaseJumpCount)
-            {
-                canJump = false;
-                JumpCount -= 1;
-                canSecondJump = true;
-                isDecreaseJumpCount = true;
-            }
-        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -765,7 +644,7 @@ public class PlayerController : MonoBehaviour
         }//處於強力無敵時才使用這個
         if (collision.GetComponent<DashJudgement>() != null)
         {
-            BoxCollider.isTrigger = false;
+            _boxCollider.isTrigger = false;
         }
     }
     private void OnTriggerStay2D(Collider2D collision)
@@ -774,46 +653,6 @@ public class PlayerController : MonoBehaviour
         {
             collision.gameObject.GetComponent<Portal>().BeginChangeScene();
             Rigid2D.gravityScale = 0;
-        }
-    }
-
-    //跳躍
-    void jump()
-    {
-        if(canJump && !JumpTouchCeilling)
-        {
-            isJump = true;
-            if (JumpForceCount <= 10)
-            {
-                Rigid2D.AddForce(new Vector2(0, (JumpForce / 2) + (0.05f * JumpForce * JumpForceCount)), ForceMode2D.Impulse);
-            }
-            else
-            {
-                Rigid2D.AddForce(new Vector2(0, JumpForce), ForceMode2D.Impulse);
-            }
-            if (Rigid2D.velocity.y > SpeedlimitY)
-            {
-                canJump = false;
-            }
-        }
-        if(canSecondJump && !JumpTouchCeilling && JumpCount>0 && !isGround)
-        {
-            isFall = false;
-            isSecondJump = true;
-            if (JumpForceCount <= 10)
-            {
-                Rigid2D.AddForce(new Vector2(0, (JumpForce / 2) + (0.05f * JumpForce * JumpForceCount)), ForceMode2D.Impulse);
-            }
-            else
-            {
-                canSecondJump = false;
-                JumpCount -= 1;
-            }
-            if (Rigid2D.velocity.y > (SpeedlimitY)/1.2f)
-            {
-                canSecondJump = false;
-                JumpCount -= 1;
-            }
         }
     }
 
@@ -913,117 +752,42 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void ReadyToDash()
+    public void ReadyToDash()
     {
-        if (isGround)
+        IgnoreGravity();
+        _boxCollider.isTrigger = true;
+    }
+    public void DashEnd()
+    {
+        CanDash = false;
+        LastDashTime = _time;
+
+        switch (_player.face)
         {
-            isDashOnGround = true;
+            case Face.Right:
+                if (!touchRightWall)
+                {
+                    Rigid2D.velocity = new Vector2(DashEndPushPower, Rigid2D.velocity.y);
+                }
+                break;
+            case Face.Left:
+                if (!touchLeftWall)
+                {
+                    Rigid2D.velocity = new Vector2(-DashEndPushPower, Rigid2D.velocity.y);
+                }
+                break;
         }
 
-        Rigid2D.gravityScale = 0;
-        
-        Rigid2D.velocity = new Vector2(Rigid2D.velocity.x,0);
-
-        BoxCollider.isTrigger = true;
-
-        isDash = true;
-
-        CantDoAnyThing = true;
-
-        DashTimeLeft = DashTime;
-
-        LastDash = Time.time;
-    }
-
-    void Dash()
-    {
-        if (isDash)
+        _boxCollider.isTrigger = false;
+        if (isGround)
         {
-            if (GameEvent.isAniPlay || isHurted)
-            {
-                if (isDashOnGround)
-                {
-                    canJump = false;
-                    JumpCount -= 1;
-                    canSecondJump = true;
-                    isDashOnGround = false;
-                }
-                BoxCollider.isTrigger = false;
-                if (isGround)
-                {
-                    Rigid2D.gravityScale = 0;
-                    Rigid2D.drag = 20;
-                }
-                else
-                {
-                    Rigid2D.gravityScale = 7;
-                    Rigid2D.drag = 5;
-                }
-                isDash = false;
-                CantDoAnyThing = false;
-            }
-            if(DashTimeLeft > 0)
-            {
-                DashTimeLeft -= _fixedDeltaTime;
-
-                ShadowPool.instance.GetFromPool();
-
-                switch (face)
-                {
-                    case Face.Right:
-                        if (!touchRightWall)
-                        {
-                            _transform.position = new Vector3(DashSpeed * MoveDirection.x * _fixedDeltaTime + _transform.position.x, DashSpeed * MoveDirection.y * _fixedDeltaTime + _transform.position.y, 0);
-                        }
-                        break;
-                    case Face.Left:
-                        if (!touchLeftWall)
-                        {
-                            _transform.position = new Vector3(-DashSpeed * MoveDirection.x * _fixedDeltaTime + _transform.position.x, DashSpeed * MoveDirection.y * _fixedDeltaTime + _transform.position.y, 0);
-                        }
-                        break;
-                }
-            }
-            if(DashTimeLeft <= 0)
-            {
-                if (isDashOnGround)
-                {
-                    canJump = false;
-                    JumpCount -= 1;
-                    canSecondJump = true;
-                    isDashOnGround = false;
-                }
-                BoxCollider.isTrigger = false;
-                if (isGround)
-                {
-                    Rigid2D.gravityScale = 0;
-                    Rigid2D.drag = 20;
-                }
-                else
-                {
-                    Rigid2D.gravityScale = 7;
-                    Rigid2D.drag = 5;
-                }
-
-                switch (face)
-                {
-                    case Face.Right:
-                        if (!touchRightWall)
-                        {
-                            Rigid2D.velocity = new Vector2(DashEndPushPower, Rigid2D.velocity.y);
-                        }
-                        break;
-                    case Face.Left:
-                        if (!touchLeftWall)
-                        {
-                            Rigid2D.velocity = new Vector2(-DashEndPushPower, Rigid2D.velocity.y);
-                        }
-                        break;
-                }
-
-                isDash = false;
-                CantDoAnyThing = false;
-            }
+            Rigid2D.gravityScale = 0;
+            Rigid2D.drag = 20;
+        }
+        else
+        {
+            RestoreGravity();
+            Rigid2D.drag = 5;
         }
     }
 
@@ -1047,11 +811,11 @@ public class PlayerController : MonoBehaviour
 
             if (!DieByCapture)
             {
-                _aniController.DieAniPlay();
+                _OldAniController.DieAniPlay();
             }
             else
             {
-                _aniController.WeakDieAniPlay();
+                _OldAniController.WeakDieAniPlay();
             }
 
             DieTimer -= _deltaTime;
@@ -1084,344 +848,251 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void PlayerOperate()
+    private void OperateCommand(HashSet<PlayerStatus> Set, float deltaTime)
     {
-        bool _RightMove = false;
-        bool _LeftMove = false;
-        bool _WalkThrow = false;
-        bool _Jump = false;
-        bool _JumpEnd = false;
-        bool _Dash = false;
-        bool _NormalAtk = false;
-        bool _NormalAtkEnd = false;
-        bool _StrongAtk = false;
-        bool _ChangeItem = false;
-        bool _UseItem = false;
-        bool _UseItemEnd = false;
-        bool _Restore = false;
-        bool _Shoot = false;
-        bool _ShootEnd = false;
-        bool _Block = false;
-        bool _ItemWindow = false;
-
-        //確認指令
-        //移動
-        if (Input.GetKey(KeyCodeManage.GoRight))
-        {
-            _RightMove = true;
-        }
-        if (Input.GetKey(KeyCodeManage.GoLeft))
-        {
-            _LeftMove = true;
-        }
-        if (Input.GetAxis("Horizontal") > 0.8 && !Input.GetKey(KeyCodeManage.GoRight))
-        {
-            _RightMove = true;
-        }
-        if (Input.GetAxis("Horizontal") < -0.8 && !Input.GetKey(KeyCodeManage.GoLeft))
-        {
-            _LeftMove = true;
-        }
-        //移動投擲
-        if (Input.GetKey(KeyCodeManage.Interact))
-        {
-            if (_RightMove || _LeftMove)
-            {
-                _WalkThrow = true;
-            }
-        }
-        if (_RightMove && Input.GetAxis("RightHorizontal") < -0.3)
-        {
-            _WalkThrow = true;
-        }
-        if (_LeftMove && Input.GetAxis("RightHorizontal") > 0.3)
-        {
-            _WalkThrow = true;
-        }
-        //跳躍
-        if (Input.GetKeyDown(KeyCodeManage.Jump) || _keyCodeManage.JumpPressed)
-        {
-            _Jump = true;
-        }
-        if (Input.GetKeyUp(KeyCodeManage.Jump) || _keyCodeManage.JumpUp)
-        {
-            _JumpEnd = true;
-        }
-        //閃避
-        if (Input.GetKeyDown(KeyCodeManage.Dash) || _keyCodeManage.DashPressed)
-        {
-            _Dash = true;
-        }
-        //揮劍
-        if (Input.GetKeyDown(KeyCodeManage.NormalAtk) || _keyCodeManage.NormalAtkPressed)
-        {
-            _NormalAtk = true;
-        }
-        if (Input.GetKeyUp(KeyCodeManage.NormalAtk) ||  _keyCodeManage.NormalAtkUp)
-        {
-            _NormalAtkEnd = true;
-        }
-        if (Input.GetKeyDown(KeyCodeManage.StrongAtk) || _keyCodeManage.StrongAtkPressed)
-        {
-            _StrongAtk = true;
-        }
-        //使用道具
-        if (Input.GetKeyDown(KeyCodeManage.ChangeUseItem) || _keyCodeManage.ChangeUseItemPressed)
-        {
-            _ChangeItem = true;
-        }
-
-        if (Input.GetKeyDown(KeyCodeManage.UseItem) || _keyCodeManage.UseItemPressed)
-        {
-            _UseItem = true;
-        }
-        if (Input.GetKeyUp(KeyCodeManage.UseItem) || _keyCodeManage.UseItemUp)
-        {
-            _UseItemEnd = true;
-        }
-        //補血
-        if (Input.GetKeyDown(KeyCodeManage.Restore) || _keyCodeManage.RestorePressed)
-        {
-            _Restore = true;
-        }
-        //開槍
-        if (Input.GetKeyDown(KeyCodeManage.Shoot) || _keyCodeManage.ShootPressed)
-        {
-            _Shoot = true;
-        }
-        if (Input.GetKeyUp(KeyCodeManage.Shoot) || _keyCodeManage.ShootUp)
-        {
-            _ShootEnd = true;
-        }
-        //格檔
-        if (Input.GetKeyDown(KeyCodeManage.Block) || _keyCodeManage.BlockPressed)
-        {
-            _Block = true;
-        }
-        //道具
-        if (Input.GetKeyDown(KeyCodeManage.OpenItemWindow) || Input.GetKeyDown(KeyCode.JoystickButton6))
-        {
-            _ItemWindow = true;
-        }
-
-        //QTE false
-        if (_keyCodeManage.QTENormalAtkPressed)
-        {
-            _keyCodeManage.QTENormalAtkPressed = false;
-        }
-        if (_keyCodeManage.QTENormalAtkUp)
-        {
-            _keyCodeManage.QTENormalAtkUp = false;
-        }
-
-        //QTE處理
-        if (GameEvent.isAniPlay)
-        {
-            if (Input.GetKeyDown(KeyCodeManage.NormalAtk) || _keyCodeManage.NormalAtkPressed)
-            {
-                _keyCodeManage.QTENormalAtkPressed = true;
-            }
-            if (Input.GetKeyUp(KeyCodeManage.NormalAtk) || _keyCodeManage.NormalAtkUp)
-            {
-                _keyCodeManage.QTENormalAtkUp = true;
-            }
-        }
-
-        _keyCodeManage.ResetControllerCommand();
-
-        if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace)
+        if (Set.Count == 0)
         {
             return;
         }
 
-        //執行指令
-        //移動
-        if (_RightMove)
+        Queue<PlayerStatus> OperateQueue = new Queue<PlayerStatus>();
+        foreach (var item in Set)
         {
-            ReceiveRightWalkCommand = true;
-            if (!CantDoAnyThing && !ReceiveLeftWalkCommand)
-            {
-                if (face == Face.Left && canTurn)
-                {
-                    face = Face.Right;
-                }
-                isWalking = true;
-            }
-            else if (!ReceiveLeftWalkCommand && OnlyCanMove)
-            {
-                isWalking = true;
-            }
-        }
-        if (!_RightMove && ReceiveRightWalkCommand)
-        {
-            ReceiveRightWalkCommand = false;
-        }
-        if (_LeftMove)
-        {
-            ReceiveLeftWalkCommand = true;
-            if (!CantDoAnyThing && !ReceiveRightWalkCommand)
-            {
-                if (face == Face.Right && canTurn)
-                {
-                    face = Face.Left;
-                }
-                isWalking = true;
-            }
-            else if (!ReceiveRightWalkCommand && OnlyCanMove)
-            {
-                isWalking = true;
-            }
-        }
-        if (!_LeftMove && ReceiveLeftWalkCommand)
-        {
-            ReceiveLeftWalkCommand = false;
-        }
-        //移動投擲
-        if (_WalkThrow && isGround)
-        {
-            if (GameEvent.TutorialComplete)
-            {
-                _battleSystem.CanWalkThrow = true;
-            }
-        }
-        if (!_WalkThrow && _battleSystem.CanWalkThrow)
-        {
-            _battleSystem.CanWalkThrow = false;
-        }
-        //跳躍
-        if (_Jump)
-        {
-            isKeyZPressed = true;
-            isJumpForceRun = true;
-            isDecreaseJumpCount = true;
-            JumpTouchCeilling = false;
-        }
-        if (_JumpEnd)
-        {
-            if (JumpCount > 0)
-            {
-                if (canSecondJump)
-                {
-                    canSecondJump = false;
-                }
-                else
-                {
-                    canSecondJump = true;
-                }
-            }
-            JumpForceCount = 0;
-            isJumpForceRun = false;
-            isKeyZPressed = false;
-            canJump = false;
-            JumpCount -= 1;
-        }
-        //閃避
-        if (_Dash)
-        {
-            if (Time.time >= (LastDash + DashCoolDown))
-            {
-                if (!CantDoAnyThing)
-                {
-                    //執行dash
-                    ReadyToDash();
-                }
-                else if (isRestore || _battleSystem.isAim || _battleSystem.isSharpen || _battleSystem.isUsingRitualSword)
-                {
-                    //執行dash
-                    ReadyToDash();
-                }
-            }
-        }
-        //揮劍
-        if (_NormalAtk)
-        {
-            _battleSystem.AccumulateSystem();
-        }
-        if (_NormalAtkEnd)
-        {
-            _battleSystem.NormalAtkSystem();
-        }
-        if (_StrongAtk)
-        {
-            _battleSystem.StrongAtkSystem();
-        }
-        //使用道具
-        if (_ChangeItem)
-        {
-            _itemManage.NowPrepareItemID = itemManage.ChangePrepareItem(_itemManage.NowPrepareItemID);
+            OperateQueue.Enqueue(item);
         }
 
-        if (_UseItem && GameEvent.TutorialComplete)
+        while (OperateQueue.Count > 0)
         {
-            switch (_itemManage.NowPrepareItem)
-            {
-                case itemManage.PrepareItem.Cocktail:
-                    _battleSystem.CocktailJudgeSystem();
-                    break;
-                case itemManage.PrepareItem.ExplosionBottle:
-                    _battleSystem.CocktailJudgeSystem();
-                    break;
-                case itemManage.PrepareItem.Sharpener:
-                    _battleSystem.BeginSharpenBlade();
-                    break;
-                case itemManage.PrepareItem.RitualSword:
-                    _battleSystem.BeginUseRitualSword();
-                    break;
-            }
+            OperateQueue.Peek().Execute(deltaTime);
+            OperateQueue.Dequeue();
         }
-        if (_UseItemEnd && GameEvent.TutorialComplete)
+    }
+    private void FixedOperateCommand(HashSet<PlayerStatus> Set, float deltaTime)
+    {
+        if(Set.Count == 0)
         {
-            switch (_itemManage.NowPrepareItem)
-            {
-                case itemManage.PrepareItem.Cocktail:
-                    _battleSystem.AimThrowSystem();
-                    break;
-                case itemManage.PrepareItem.ExplosionBottle:
-                    _battleSystem.AimThrowSystem();
-                    break;
-            }
+            return;
         }
-        //補血
-        if (_Restore)
+
+        Queue<PlayerStatus> OperateQueue = new Queue<PlayerStatus>();
+        foreach (var item in Set)
         {
-            if (!CantDoAnyThing && isGround)
+            OperateQueue.Enqueue(item);
+        }
+
+        while (OperateQueue.Count > 0)
+        {
+            OperateQueue.Peek().FixedExecute(deltaTime);
+            OperateQueue.Dequeue();
+        }
+    }
+    private void OperateBuff(HashSet<Buff> Set, float deltaTime)
+    {
+        if (Set.Count == 0)
+        {
+            return;
+        }
+
+        Queue<Buff> OperateQueue = new Queue<Buff>();
+        foreach (var item in Set)
+        {
+            OperateQueue.Enqueue(item);
+        }
+
+        while (OperateQueue.Count > 0)
+        {
+            OperateQueue.Peek().CalculateTimer(deltaTime);
+            OperateQueue.Dequeue();
+        }
+    }
+
+    public bool CheckOperateSetEmpty()
+    {
+        if(UpdateOperateCommands.Count == 0 && FixedUpdateOperateCommands.Count == 0)
+        {
+            return true;
+        }
+
+        return false;
+    }
+    public bool CheckCommandApply(PlayerStatus.Status Applicant)
+    {
+        Queue<PlayerStatus> RemoveQueue = new Queue<PlayerStatus>();
+
+        if (UpdateOperateCommands.Count > 0)
+        {
+            foreach (var item in UpdateOperateCommands)
             {
-                if (_itemManage.RestoreItemNumber > 0)
+                if (item.CommandReplaceSet.Contains(Applicant))
                 {
-                    isRestore = true;
-                    CantDoAnyThing = true;
-                    RestoreTimerSwitch = true;
+                    RemoveQueue.Enqueue(item);
+                }
+                if (!item.CommandReplaceSet.Contains(Applicant) && !item.CommandCoexistSet.Contains(Applicant))
+                {
+                    return false;
                 }
             }
         }
-        //開槍
-        if (_Shoot)
+        if (FixedUpdateOperateCommands.Count > 0)
         {
-            _battleSystem.ShootSystem();
-        }
-        if (_ShootEnd)
-        {
-            _battleSystem.ShootAccumulateEnd();
-        }
-        //格檔
-        if (_Block)
-        {
-            if (GameEvent.TutorialComplete)
+            foreach (var item in FixedUpdateOperateCommands)
             {
-                _battleSystem.BlockSystem();
+                if (item.CommandReplaceSet.Contains(Applicant))
+                {
+                    RemoveQueue.Enqueue(item);
+                }
+                if (!item.CommandReplaceSet.Contains(Applicant) && !item.CommandCoexistSet.Contains(Applicant))
+                {
+                    return false;
+                }
             }
         }
-        //道具
-        if (_ItemWindow && !AnnouncementController.isOpenAnnouncement)
+
+        while (RemoveQueue.Count > 0)
         {
-            if (GameEvent.TutorialComplete)
+            RemoveQueue.Peek().RemoveCommandFromSet();
+            RemoveQueue.Dequeue();
+        }
+
+        return true;
+    }
+    public void AddDefaultMode()
+    {
+        if (isGround)
+        {
+            _waitStatus.AddCommandToSet();
+        }
+        else
+        {
+            _glidingStatus.AddCommandToSet();
+        }
+    }
+
+    public bool GetYVelocity()
+    {
+        if (Rigid2D.velocity.y >= 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private void JumpCountJudge()
+    {
+        if (isGround && !UpdateOperateCommands.Contains(_jumpStatus))
+        {
+            JumpCount = 2;
+        }
+
+        if(!isGround && JumpCount == 2)
+        {
+            JumpCount--;
+        }
+    }
+    public bool JumpBreakJudge()
+    {
+        if (isCeiling)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private void Restore()
+    {
+        if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace) return;
+
+        if (!CantDoAnyThing && isGround)
+        {
+            if (_itemManage.RestoreItemNumber > 0)
             {
-                _itemWindow.isItemWindowAppear = true;
-                PauseMenuController.OpenAnyMenu = true;
-                BackgroundSystem.CantPause = true;
-                Item.SetActive(true);
+                isRestore = true;
+                CantDoAnyThing = true;
+                RestoreTimerSwitch = true;
             }
         }
+    }
+    private void Block()
+    {
+        if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace) return;
+
+        if (GameEvent.TutorialComplete)
+        {
+            _battleSystem.BlockSystem();
+        }
+    }
+    private void OpenItemWindow()
+    {
+        if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace) return;
+
+        if (!AnnouncementController.isOpenAnnouncement && GameEvent.TutorialComplete)
+        {
+            _itemWindow.isItemWindowAppear = true;
+            PauseMenuController.OpenAnyMenu = true;
+            BackgroundSystem.CantPause = true;
+            Item.SetActive(true);
+        }
+    }
+    private void Interact()
+    {
+        isUpArrowPressed = true;
+    }
+    private void InteractEnd()
+    {
+        isUpArrowPressed = false;
+    }
+
+    public void PlayAnimation()
+    {
+        NowPlayingAni?.AniPlay();
+    }
+    public void SetAnimation(AnimationController _ani)
+    {
+        if (NowPlayingAni == null) 
+        {
+            NowPlayingAni = _ani;
+        }
+        else if(_ani.PlayPriority > NowPlayingAni.PlayPriority)
+        {
+            NowPlayingAni.AniStop();
+            NowPlayingAni = _ani;
+        }
+    }
+    public void StopAnimation(AnimationController _ani)
+    {
+        AnimationController newAni = null;
+        int priority = -1;
+
+        if (NowPlayingAni == _ani)
+        {
+            if (UpdateOperateCommands.Count > 0)
+                foreach (var item in UpdateOperateCommands)
+                {
+                    if(item is IPlayerAniUser AniUser && AniUser.GetAnimationPriority() > priority)
+                    {
+                        newAni = AniUser.GetAnimation();
+                        priority = AniUser.GetAnimationPriority();
+                    }
+                }
+            if (FixedUpdateOperateCommands.Count > 0)
+                foreach (var item in FixedUpdateOperateCommands)
+                {
+                    if (item is IPlayerAniUser AniUser && AniUser.GetAnimationPriority() > priority)
+                    {
+                        newAni = AniUser.GetAnimation();
+                    }
+                }
+
+            NowPlayingAni = newAni;
+        }
+
+        _ani.AniStop();
     }
 
     private void TouchGroundSoundJudge(RaycastHit2D Raycast)
@@ -1451,28 +1122,6 @@ public class PlayerController : MonoBehaviour
                     TouchMetalGround = false;
                     break;
             }
-        }
-    }
-
-    private void AccumulateBreak()
-    {
-        if (_battleSystem.isCAtk || _battleSystem.isJumpCAtk || _battleSystem.isThrowing)
-        {
-            _battleSystem.isAccumulate = false;
-            _battleSystem.isAccumulateComplete = false;
-            _battleSystem.AccumulateTimerSwitch = false;
-        }
-        if (_battleSystem.isJumpThrow || _battleSystem.isWalkThrow || _battleSystem.isShootAccumulate)
-        {
-            _battleSystem.isAccumulate = false;
-            _battleSystem.isAccumulateComplete = false;
-            _battleSystem.AccumulateTimerSwitch = false;
-        }
-        if (_battleSystem.isShooting || isRestore || _battleSystem.isBlock)
-        {
-            _battleSystem.isAccumulate = false;
-            _battleSystem.isAccumulateComplete = false;
-            _battleSystem.AccumulateTimerSwitch = false;
         }
     }
 
@@ -1545,8 +1194,10 @@ public class PlayerController : MonoBehaviour
     }
     public void HurtedByCaptureAtk(CaptureAtk _Atk)
     {
+        _boxCollider.isTrigger = true;
         _battleSystem.isCaptured = true;
-        _captruedController._monsterCaptureController = _Atk._captureController;
+
+        _captruedController.InisializeCaptureAni(_Atk._basicData, _Atk._captureController);
     }
     public void HurtedByCaptureAtkEnd()
     {
@@ -1554,6 +1205,7 @@ public class PlayerController : MonoBehaviour
         _battleSystem.isCaptured = false;
         _battleSystem.isWeak = true;
         _battleSystem.WeakTimerSwitch = true;
+        _boxCollider.isTrigger = false;
         HurtedInvincible = true;
     }
     private void ResetMonsterAtkData()
@@ -1611,7 +1263,7 @@ public class PlayerController : MonoBehaviour
 
             if (_battleSystem.isBlockActualAppear && MonsterCanBeBlockRecord)
             {
-                switch (face)
+                switch (_player.face)
                 {
                     case Face.Left:
                         if (MonsterAtkPlaceRecord.x >= _transform.position.x)
@@ -1704,15 +1356,6 @@ public class PlayerController : MonoBehaviour
         SkillPowerUI.transform.localScale = new Vector3((float)_battleSystem.SkillPower / (float)_battleSystem.TrueMaxSkillPower, SkillPowerUI.transform.localScale.y, SkillPowerUI.transform.localScale.z);
         //殺戮值
         //KillerPointUI.transform.localScale = new Vector3((float)BattleSystem.KillerPoint / (float)_battleSystem.MaxKillerPoint, KillerPointUI.transform.localScale.y, KillerPointUI.transform.localScale.z);
-        //AtkBuff
-        if (_battleSystem.isAtkBuff)
-        {
-            AtkBuffUI.SetActive(true);
-        }
-        else
-        {
-            AtkBuffUI.SetActive(false);
-        }
         //DefendBuff
         if (_battleSystem.isDefendBuff)
         {
@@ -1733,27 +1376,22 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void GravityJudge()
+    public void IgnoreGravity()
     {
-        if (isDash || HurtingByMoveAtk || ShouldIgnoreGravity)
+        isIgnoreGravity = true;
+        Rigid2D.gravityScale = 0;
+        Rigid2D.velocity = new Vector3(Rigid2D.velocity.x, 0,0);
+    }
+    public void RestoreGravity()
+    {
+        isIgnoreGravity = false;
+        Rigid2D.gravityScale = 7;
+    }
+    private void OldDragJudge()
+    {
+        if (!isGround && !isIgnoreGravity)
         {
-            IgnoreGravity = true;
-        }
-        else
-        {
-            IgnoreGravity = false;
-        }
-
-        if (!isGround)
-        {
-            if (IgnoreGravity)
-            {
-                Rigid2D.gravityScale = 0;
-            }
-            else
-            {
-                Rigid2D.gravityScale = 7;
-            }
+            Rigid2D.gravityScale = 7;
             Rigid2D.drag = 5;
         }
     }
@@ -1761,5 +1399,108 @@ public class PlayerController : MonoBehaviour
     private void DebugBoolSet()//debug專用
     {
         
+    }
+
+    public void NewRecordMonsterAtkData(MonsterAtk _atk, Transform AtkTransform)
+    {
+        MonsterImpulseXRecord = _atk.ImpulsePowerX;
+        MonsterImpulseYRecord = _atk.ImpulsePowerY;
+        MonsterDamageRecord = _atk.Damage;
+        ShouldJudgeHurt = true;
+        MonsterCanBeBlockRecord = _atk.CanBeBlock;
+        MonsterNoAvoidRecord = _atk.NoAvoid;
+        switch (_atk.Type)
+        {
+            case MonsterAtk.AtkType.Normal:
+                MonsterAtkTypeRecord = NormalMonsterAtk.AtkType.Normal;
+                break;
+            case MonsterAtk.AtkType.Laser:
+                MonsterAtkTypeRecord = NormalMonsterAtk.AtkType.Laser;
+                break;
+            case MonsterAtk.AtkType.NoSound:
+                MonsterAtkTypeRecord = NormalMonsterAtk.AtkType.NoSound;
+                break;
+        }
+        if (AtkTransform.GetComponent<MoveAtk>() != null)
+        {
+            MonsterMoveAtkRecord = true;
+        }
+        MonsterAtkPlaceRecord = AtkTransform.position;
+    }
+
+    public void NewPlayerDataInisialize()
+    {
+        if (GameObject.Find("FollowSystem") != null)
+        {
+            _inputManager = GameObject.Find("FollowSystem").GetComponent<InputManager>();
+        }
+
+        _aniController = new PlayerAniController(_transform.GetChild(0), 0.28f);
+        _aniController.useItemAni.AssignParticle(RitualSwordParticle);
+        _aniController.throwItemAni.AssignImage(AimCocktailImage, AimExplosionBottleImage);
+        _aniController.walkThrowAni.AssignImage(WalkThrowCocktailImage, WalkThrowExplosionBottleImage);
+        _aniController.jumpThrowAni.AssignImage(JumpThrowCocktailImage, JumpThrowExplosionBottleImage);
+        _buffManager = new PlayerBuffManager(this, _battleSystem);
+
+        _waitStatus = new PlayerWaitStatus(this, _aniController.waitAni);
+        _fallWaitStatus = new PlayerFallWaitStatus(this, _aniController.jumpAni, LongFallWaitTimerSet);
+        _glidingStatus = new PlayerGlidingStatus(this, _aniController.jumpAni, _fallWaitStatus, LongFallTimerSet);
+
+        _rightMoveStatus = new PlayerRightMoveStatus(this, _aniController.runAni, Speed, Move);
+        _leftMoveStatus = new PlayerLeftMoveStatus(this, _aniController.runAni, Speed, Move);
+        _rightMoveStop = new PlayerMoveStop(_rightMoveStatus);
+        _leftMoveStop = new PlayerMoveStop(_leftMoveStatus);
+        _jumpStatus = new PlayerJumpStatus(this, Rigid2D, _aniController.jumpAni, SecondJumpFire, JumpBreakJudge, JumpForce, SpeedlimitY, SecondJumpTimerSet);
+        _jumpStop = new PlayerJumpStop(_jumpStatus);
+        _dashStatus = new PlayerDashStatus(this, _aniController.dashAni, Move);
+
+        _shootStatus = new PlayerShootStatus(this, _battleSystem, _leftMoveStatus, _rightMoveStatus, _aniController.shootAni);
+        _normalAtkStatus = new PlayerNormalAtkStatus(this,_battleSystem, _aniController.normalAtkAni);
+        _jumpAtkStatus = new PlayerJumpAtkStatus(this, _battleSystem, _aniController.normalAtkAni);
+        _strongAtkStatus = new PlayerStrongAtkStatus(this, _battleSystem, _aniController.strongAtkAni, _battleSystem.CAtkTimerSet, _battleSystem.JumpCAtkTimerSet,
+            _battleSystem.CAtk, _battleSystem.JumpCAtk, IgnoreGravity, RestoreGravity, _battleSystem.StrongAtkCost);
+
+        _accumulateStatus = new PlayerAcumulateStatus(this, _battleSystem.AccumulateTimerSet, AccumulateLight);
+        _accumulateStop = new PlayerAcumulateStop(_battleSystem, _accumulateStatus, _normalAtkStatus, _jumpAtkStatus, _normalAtkStatus);
+
+        _changeItem = new PlayerChangeItem(_itemManage);
+        _aimLineAnimation = new PlayerAimLineAnimation(_battleSystem);
+        _leftWalkThrow = new PlayerLeftWalkThrowStatus(this, _aniController.walkThrowAni, _battleSystem);
+        _rightWalkThrow = new PlayerRightWalkThrowStatus(this, _aniController.walkThrowAni, _battleSystem);
+
+        _useNormalItemStatus = new PlayerUseNormalItemStatus(this, _aniController.useItemAni);
+        _throwItemStatus = new PlayerUseThrowItemStatus(this, _aniController.throwItemAni, _aimLineAnimation, _inputManager, _battleSystem);
+        _jumpThrowStatus = new PlayerJumpThrowStatus(this, _aniController.jumpThrowAni, _battleSystem);
+        _useItemStart = new PlayerUseItemStart(_itemManage, _useNormalItemStatus, _throwItemStatus, _leftWalkThrow, _rightWalkThrow, _jumpThrowStatus, _inputManager);
+        _aimStop = new PlayerAimStop(_throwItemStatus);
+
+        _itemManage.InisializeItemClass(_battleSystem, _useNormalItemStatus, _buffManager);
+
+        if (_inputManager != null)
+        {
+            _inputManager.SubscribeCommand(Command.RightMove, CommandType.Pressing, _rightMoveStatus);
+            _inputManager.SubscribeCommand(Command.RightMove, CommandType.Up, _rightMoveStop);
+            _inputManager.SubscribeCommand(Command.LeftMove, CommandType.Pressing, _leftMoveStatus);
+            _inputManager.SubscribeCommand(Command.LeftMove, CommandType.Up, _leftMoveStop);
+            _inputManager.SubscribeCommand(Command.NormalAtk, CommandType.Pressing, _accumulateStatus);
+            _inputManager.SubscribeCommand(Command.NormalAtk, CommandType.Up, _accumulateStop);
+            _inputManager.SubscribeCommand(Command.StrongAtk, CommandType.Pressed, _strongAtkStatus);
+            _inputManager.SubscribeCommand(Command.Jump, CommandType.Pressed, _jumpStatus);
+            _inputManager.SubscribeCommand(Command.Jump, CommandType.Up, _jumpStop);
+            _inputManager.SubscribeCommand(Command.UseItem, CommandType.Pressed, _useItemStart);
+            _inputManager.SubscribeCommand(Command.UseItem, CommandType.Up, _aimStop);
+            _inputManager.SubscribeCommand(Command.ChangeItem, CommandType.Pressed, _changeItem);
+            _inputManager.SubscribeCommand(Command.Dash, CommandType.Pressed, _dashStatus);
+            _inputManager.SubscribeCommand(Command.Shoot, CommandType.Pressed, _shootStatus);
+
+            /*
+            _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Restore, PlayerCommandManager.CommandType.Pressed, Restore);
+            _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Block, PlayerCommandManager.CommandType.Pressed, Block);
+            _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.ItemWindow, PlayerCommandManager.CommandType.Pressed, OpenItemWindow);
+            _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Interact, PlayerCommandManager.CommandType.Pressed, Interact);
+            _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Interact, PlayerCommandManager.CommandType.Up, InteractEnd);*/
+        }
+
+        AddDefaultMode();
     }
 }

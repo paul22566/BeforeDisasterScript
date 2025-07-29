@@ -207,22 +207,22 @@ public class ItemWindow : MonoBehaviour
         ItemButton.isDestroy = false;
 
         //決定size
-        if (itemManage.DocumentGettingNumber > itemManage.ItemGettingNumber)
+        if (ItemManage.DocumentGettingNumber > ItemManage.ItemGettingNumber)
         {
-            if (itemManage.DocumentGettingNumber > 9)
+            if (ItemManage.DocumentGettingNumber > 9)
             {
-                NowScrollbarDistance = 1 / (itemManage.DocumentGettingNumber - 9);
-                _itemShowAreaTransform.sizeDelta = new Vector2(_itemShowAreaTransform.sizeDelta.x, NineItemHeight + (itemManage.DocumentGettingNumber - 9) * HeightDistance);
-                _documentShowAreaTransform.sizeDelta = new Vector2(_documentShowAreaTransform.sizeDelta.x, NineItemHeight + (itemManage.DocumentGettingNumber - 9) * HeightDistance);
+                NowScrollbarDistance = 1 / (ItemManage.DocumentGettingNumber - 9);
+                _itemShowAreaTransform.sizeDelta = new Vector2(_itemShowAreaTransform.sizeDelta.x, NineItemHeight + (ItemManage.DocumentGettingNumber - 9) * HeightDistance);
+                _documentShowAreaTransform.sizeDelta = new Vector2(_documentShowAreaTransform.sizeDelta.x, NineItemHeight + (ItemManage.DocumentGettingNumber - 9) * HeightDistance);
             }
         }
         else
         {
-            if (itemManage.ItemGettingNumber > 9)
+            if (ItemManage.ItemGettingNumber > 9)
             {
-                NowScrollbarDistance = 1 / (itemManage.ItemGettingNumber - 9);
-                _itemShowAreaTransform.sizeDelta = new Vector2(_itemShowAreaTransform.sizeDelta.x, NineItemHeight + (itemManage.ItemGettingNumber - 9) * HeightDistance);
-                _documentShowAreaTransform.sizeDelta = new Vector2(_documentShowAreaTransform.sizeDelta.x, NineItemHeight + (itemManage.ItemGettingNumber - 9) * HeightDistance);
+                NowScrollbarDistance = 1 / (ItemManage.ItemGettingNumber - 9);
+                _itemShowAreaTransform.sizeDelta = new Vector2(_itemShowAreaTransform.sizeDelta.x, NineItemHeight + (ItemManage.ItemGettingNumber - 9) * HeightDistance);
+                _documentShowAreaTransform.sizeDelta = new Vector2(_documentShowAreaTransform.sizeDelta.x, NineItemHeight + (ItemManage.ItemGettingNumber - 9) * HeightDistance);
             }
         }
 
@@ -267,7 +267,7 @@ public class ItemWindow : MonoBehaviour
         //顯示預覽
         ItemPreview();
 
-        if (Input.GetKeyDown(KeyCode.RightArrow) || XboxControllerDetect.isCrossRightPressed || XboxControllerDetect.isControllerRightPressed)
+        if (Input.GetKeyDown(KeyCode.RightArrow) || OldVerXboxControllerDetect.isCrossRightPressed || OldVerXboxControllerDetect.isControllerRightPressed)
         {
             isLimitReset = false;
             if (status == Status.Item)
@@ -276,7 +276,7 @@ public class ItemWindow : MonoBehaviour
             }
             status = Status.Document;
         }
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || XboxControllerDetect.isCrossLeftPressed || XboxControllerDetect.isControllerLeftPressed)
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || OldVerXboxControllerDetect.isCrossLeftPressed || OldVerXboxControllerDetect.isControllerLeftPressed)
         {
             isLimitReset = false;
             if (status == Status.Document)
@@ -317,16 +317,16 @@ public class ItemWindow : MonoBehaviour
             case Status.Item:
                 if (ItemButton.NowItemButton > 1 && !ShouldLag)
                 {
-                    if (Input.GetKeyDown(KeyCode.UpArrow) || XboxControllerDetect.isCrossUpPressed || XboxControllerDetect.isControllerUpPressed)
+                    if (Input.GetKeyDown(KeyCode.UpArrow) || OldVerXboxControllerDetect.isCrossUpPressed || OldVerXboxControllerDetect.isControllerUpPressed)
                     {
                         ShouldLag = true;
                         ShouldPlayMoveSound = true;
                         ItemButton.NowItemButton -= 1;
                     }
                 }
-                if (ItemButton.NowItemButton < itemManage.ItemGettingNumber && !ShouldLag)
+                if (ItemButton.NowItemButton < ItemManage.ItemGettingNumber && !ShouldLag)
                 {
-                    if (Input.GetKeyDown(KeyCode.DownArrow) || XboxControllerDetect.isCrossDownPressed || XboxControllerDetect.isControllerDownPressed)
+                    if (Input.GetKeyDown(KeyCode.DownArrow) || OldVerXboxControllerDetect.isCrossDownPressed || OldVerXboxControllerDetect.isControllerDownPressed)
                     {
                         ShouldLag = true;
                         ShouldPlayMoveSound = true;
@@ -337,16 +337,16 @@ public class ItemWindow : MonoBehaviour
             case Status.Document:
                 if (ItemButton.NowDocumentButton > 1 && !ShouldLag)
                 {
-                    if (Input.GetKeyDown(KeyCode.UpArrow) || XboxControllerDetect.isCrossUpPressed || XboxControllerDetect.isControllerUpPressed)
+                    if (Input.GetKeyDown(KeyCode.UpArrow) || OldVerXboxControllerDetect.isCrossUpPressed || OldVerXboxControllerDetect.isControllerUpPressed)
                     {
                         ShouldLag = true;
                         ShouldPlayMoveSound = true;
                         ItemButton.NowDocumentButton -= 1;
                     }
                 }
-                if (ItemButton.NowDocumentButton < itemManage.DocumentGettingNumber && !ShouldLag)
+                if (ItemButton.NowDocumentButton < ItemManage.DocumentGettingNumber && !ShouldLag)
                 {
-                    if (Input.GetKeyDown(KeyCode.DownArrow) || XboxControllerDetect.isCrossDownPressed || XboxControllerDetect.isControllerDownPressed)
+                    if (Input.GetKeyDown(KeyCode.DownArrow) || OldVerXboxControllerDetect.isCrossDownPressed || OldVerXboxControllerDetect.isControllerDownPressed)
                     {
                         ShouldLag = true;
                         ShouldPlayMoveSound = true;
@@ -371,7 +371,7 @@ public class ItemWindow : MonoBehaviour
         switch (status)
         {
             case Status.Item:
-                if (itemManage.ItemGettingNumber > 9)
+                if (ItemManage.ItemGettingNumber > 9)
                 {
                     if (!isLimitReset)
                     {
@@ -399,7 +399,7 @@ public class ItemWindow : MonoBehaviour
                 }
                 break;
             case Status.Document:
-                if (itemManage.DocumentGettingNumber > 9)
+                if (ItemManage.DocumentGettingNumber > 9)
                 {
                     if (!isLimitReset)
                     {
@@ -433,7 +433,7 @@ public class ItemWindow : MonoBehaviour
 
     private void InisializeItemPage()
     {
-        for (int i = 0; i < itemManage.TotalItemNumber; i++)
+        for (int i = 0; i < ItemManage.TotalItemNumber; i++)
         {
             GameObject TemporaryButton = new GameObject();
             GameObject TemporaryText = new GameObject();
@@ -502,13 +502,13 @@ public class ItemWindow : MonoBehaviour
             if (ItemPageList[i].Button.GetComponent<ItemButton>() != null)
             {
                 ItemPageList[i].Button.GetComponent<ItemButton>().ButtonOrder = i;
-                if (itemManage.ItemReadList[i])
+                if (ItemManage.ItemReadList[i])
                 {
                     ItemPageList[i].Button.GetComponent<ItemButton>().TurnOffReadNotice();
                 }
             }
         }
-        for (int i = 0; i < itemManage.TotalDocumentNumber; i++)
+        for (int i = 0; i < ItemManage.TotalDocumentNumber; i++)
         {
             GameObject TemporyButton = new GameObject();
             GameObject TemporaryText = new GameObject();
@@ -541,7 +541,7 @@ public class ItemWindow : MonoBehaviour
             if (DocumentPageList[i].Button.GetComponent<ItemButton>() != null)
             {
                 DocumentPageList[i].Button.GetComponent<ItemButton>().ButtonOrder = i;
-                if (itemManage.DocumentReadList[i])
+                if (ItemManage.DocumentReadList[i])
                 {
                     DocumentPageList[i].Button.GetComponent<ItemButton>().TurnOffReadNotice();
                 }
@@ -555,17 +555,17 @@ public class ItemWindow : MonoBehaviour
         {
             int ItemListOrder = 0;
             //決定要顯示幾個道具
-            for (int i = 0; i < itemManage.ItemGettingNumber; i++)
+            for (int i = 0; i < ItemManage.ItemGettingNumber; i++)
             {
                 ItemButtonOrderRecord.Add(0);
             }
             //登記序號
-            for (int i = 0; i < itemManage.ItemGettingNumber; i++)
+            for (int i = 0; i < ItemManage.ItemGettingNumber; i++)
             {
                 bool AssignSuccess = false;
                 while (!AssignSuccess)
                 {
-                    if (itemManage.ItemNumberList[ItemListOrder] != 0)
+                    if (ItemManage.ItemNumberList[ItemListOrder] != 0)
                     {
                         ItemButtonOrderRecord[i] = ItemListOrder;
                         AssignSuccess = true;
@@ -574,7 +574,7 @@ public class ItemWindow : MonoBehaviour
                 }
             }
             //實際產出
-            for (int i = 0; i < itemManage.ItemGettingNumber; i++)
+            for (int i = 0; i < ItemManage.ItemGettingNumber; i++)
             {
                 ProduceButton(ItemPageList[ItemButtonOrderRecord[i]].Button, i, ItemShowAreaBottom);
             }
@@ -584,17 +584,17 @@ public class ItemWindow : MonoBehaviour
         {
             int DocumentListOrder = 0;
             //決定要顯示幾個道具
-            for (int i = 0; i < itemManage.DocumentGettingNumber; i++)
+            for (int i = 0; i < ItemManage.DocumentGettingNumber; i++)
             {
                 DocumentButtonOrderRecord.Add(0);
             }
             //登記序號
-            for (int i = 0; i < itemManage.DocumentGettingNumber; i++)
+            for (int i = 0; i < ItemManage.DocumentGettingNumber; i++)
             {
                 bool AssignSuccess = false;
                 while (!AssignSuccess)
                 {
-                    if (itemManage.DocumentNumberList[DocumentListOrder] != 0)
+                    if (ItemManage.DocumentNumberList[DocumentListOrder] != 0)
                     {
                         DocumentButtonOrderRecord[i] = DocumentListOrder;
                         AssignSuccess = true;
@@ -603,7 +603,7 @@ public class ItemWindow : MonoBehaviour
                 }
             }
             //實際產出
-            for (int i = 0; i < itemManage.DocumentGettingNumber; i++)
+            for (int i = 0; i < ItemManage.DocumentGettingNumber; i++)
             {
                 ProduceButton(DocumentPageList[DocumentButtonOrderRecord[i]].Button, i, DocumentShowAreaBottom);
             }
@@ -653,10 +653,10 @@ public class ItemWindow : MonoBehaviour
             AllTextFalse(ItemPageList);
             ItemPageList[ItemDisplayWindowNumber].Text.SetActive(true);
             //關閉存放區的New
-            if (!itemManage.ItemReadList[ItemDisplayWindowNumber])
+            if (!ItemManage.ItemReadList[ItemDisplayWindowNumber])
             {
                 ShouldSave = true;
-                itemManage.ItemReadList[ItemDisplayWindowNumber] = true;
+                ItemManage.ItemReadList[ItemDisplayWindowNumber] = true;
                 ItemPageList[ItemDisplayWindowNumber].Button.GetComponent<ItemButton>().TurnOffReadNotice();
             }
         }
@@ -665,10 +665,10 @@ public class ItemWindow : MonoBehaviour
             AllTextFalse(DocumentPageList);
             DocumentPageList[DocumentDisplayWindowNumber].Text.SetActive(true);
             //關閉存放區的New
-            if (!itemManage.DocumentReadList[DocumentDisplayWindowNumber])
+            if (!ItemManage.DocumentReadList[DocumentDisplayWindowNumber])
             {
                 ShouldSave = true;
-                itemManage.DocumentReadList[DocumentDisplayWindowNumber] = true;
+                ItemManage.DocumentReadList[DocumentDisplayWindowNumber] = true;
                 DocumentPageList[DocumentDisplayWindowNumber].Button.GetComponent<ItemButton>().TurnOffReadNotice();
             }
         }

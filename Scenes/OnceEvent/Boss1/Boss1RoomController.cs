@@ -15,7 +15,7 @@ public class Boss1RoomController : MonoBehaviour
     public GameObject Boss1;
     private VeryBigMonsterController _monsterController;
     private PlayerData _PlayerData;
-    private itemManage _itemManage;
+    private ItemManage _itemManage;
     public GameObject RDeadBody;
     public GameObject LDeadBody;
     public SideDoor RDoor;
@@ -95,7 +95,7 @@ public class Boss1RoomController : MonoBehaviour
         if (GameObject.Find("FollowSystem") != null)
         {
             _PlayerData = GameObject.Find("FollowSystem").GetComponent<PlayerData>();
-            _itemManage = GameObject.Find("FollowSystem").GetComponent<itemManage>();
+            _itemManage = GameObject.Find("FollowSystem").GetComponent<ItemManage>();
         }
         if (GameObject.FindGameObjectWithTag("UI") != null)
         {

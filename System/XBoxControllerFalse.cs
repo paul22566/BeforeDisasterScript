@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class XBoxControllerFalse : MonoBehaviour
 {
-    private XboxControllerDetect _controller;
+    private OldVerXboxControllerDetect _controller;
 
     private void Start()
     {
-        _controller = this.GetComponent<XboxControllerDetect>();
+        _controller = this.GetComponent<OldVerXboxControllerDetect>();
     }
 
     // Start is called before the first frame update

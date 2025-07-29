@@ -2,13 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerAtkController : MonoBehaviour
+public class PlayerAtkController : MonoBehaviour, IAttackObject
 {
+    public int Damage;
+    private AtkTrigger _trigger;
     public float AtkTimer;
     public bool CanBeBlock;
     private BattleSystem _battleSystem;
     private float _deltaTime;
     [HideInInspector] public bool CanHurt = true;
+    private int CampID;
 
     private float LagTimer = 0.03f;
 
@@ -181,6 +184,22 @@ public class PlayerAtkController : MonoBehaviour
             case CollisionType.Type.Plastic:
                 TurnOffPlastic = true;
                 break;
+        }
+    }
+
+    public void InitializeAtk(AtkData _data)
+    {
+        Damage *= (int)_data.AtkRate;
+        CampID = _data.CampID;
+        _trigger = this.transform.GetChild(0).GetComponent<AtkTrigger>();
+        _trigger.OnMakeDamage += MakeDamage;
+    }
+
+    public void MakeDamage(IHurtedObject _hurtedObject)
+    {
+        if (CampID != _hurtedObject.GetCamp())
+        {
+            _hurtedObject.HurtedControll(Damage);
         }
     }
 }

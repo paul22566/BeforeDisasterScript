@@ -60,7 +60,7 @@ public class ObjectSEPlay : MonoBehaviour
 
         if (_type == Type.FollowOther && ValidDistance != 0)
         {
-            PlayerDistance = Distance.CalculateAbsoluteDistance(_transform.position, new Vector3(PlayerController.PlayerPlaceX, PlayerController.PlayerPlaceY));
+            PlayerDistance = DistanceClass.CalculateAbsoluteDistance(_transform.position, new Vector3(PlayerController.PlayerPlaceX, PlayerController.PlayerPlaceY));
             if (SoundSource.isPlaying)
             {
                 SoundSource.volume = SEController.FOVCalculate(PlayerDistance, ValidDistance);

@@ -20,6 +20,7 @@ public class VBMonsterHead : MonoBehaviour
     private Transform _transform;
     private Transform playerTransform;
     private CollisionType _collisionType;
+    [HideInInspector] public int HeadHurtNumber;
     private float _fixDeltaTime;
 
     private float HeadCorrectionAngle = 20;
@@ -862,6 +863,7 @@ public class VBMonsterHead : MonoBehaviour
     {
         if (_objectShield.ProtectSuccess)
         {
+            HeadHurtNumber = _hurtedController.HurtedNumber;
             _hurtedController.HurtedControll(1);
         }
 

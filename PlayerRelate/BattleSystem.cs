@@ -1,10 +1,11 @@
 using UnityEngine;
+using static Creature;
 
 public class BattleSystem : MonoBehaviour
 {
     private Transform _transform;
     private PlayerController _playerController;
-    public itemManage _itemManage;
+    public ItemManage _itemManage;
     private AniMethod _aniMethod;
 
     private float NormalAtkHurtPowerSet = 10;
@@ -16,6 +17,10 @@ public class BattleSystem : MonoBehaviour
     private float BlockNormalAtkHurtPowerSet = 20;
     private float BlockStrongAtkHurtPowerSet = 40;
     private float BigGunPowerSet = 1.5f;
+
+    [HideInInspector] public int ShootCost = 30;
+    [HideInInspector] public int StrongAtkCost = 300;
+    [HideInInspector] public int CriticAtkCost = 600;
 
     public static float NormalAtkHurtPower;//怪物script都會用到(enemyEscape)
     public static float CAtkHurtPower;//怪物script都會用到(enemyEscape)
@@ -36,7 +41,7 @@ public class BattleSystem : MonoBehaviour
     [HideInInspector] public int TrueMaxSkillPower = 900;//UI魔力條滿值
     public static int KillerPoint;
     [HideInInspector] public int MaxKillerPoint = 200;
-    private float AtkCoolDown = 0.25f;
+    private float AtkCoolDown = 0.2f;
     private float AtkLastTime = -10;
     public static int DecreaseTimes = 0;//有被其他script用到(Training2Controller)
     public static int IncreaseTimes = 0;//有被其他script用到(怪物script，(enemyEscape)) 
@@ -44,10 +49,11 @@ public class BattleSystem : MonoBehaviour
     [HideInInspector] public float ThrowItemPowerY;//紀錄投擲物的力度  有被其他script用到(ThrowItem)
     private float ShootLastTime;
     private float ShootCoolDown = 0.05f;
-    private float WalkThrowCocktailPowerX = 200;
-    private float WalkThrowCocktailPowerY = 100;
-    private float JumpThrowCocktailPowerX = 200;
-    private float JumpThrowCocktailPowerY = -100;
+    [HideInInspector] public (float, float) InisialAimPower = (5, 3);
+    [HideInInspector] public float DebugAimSpeed = 15;
+    [HideInInspector] public float AimLimit = 10;
+    [HideInInspector] public (float, float) WalkThrowCocktailPower = (200, 100);
+    [HideInInspector] public (float, float) JumpThrowCocktailPower = (200, -100);
     private float ImpulseJumpPowerX = 800;
     private float ImpulseJumpPowerY = 600;
     private float SharpenerRate = 1.3f;
@@ -57,19 +63,17 @@ public class BattleSystem : MonoBehaviour
     private float _fixedDeltaTime;
 
     //TimerSet
-    private float AtkTimerSet = 0.25f;
-    private float CAtkTimerSet = 0.5f;
-    private float JumpCAtkTimerSet = 0.55f;
-    private float ThrowTimerSet = 0.5f;
+    [HideInInspector] public float AtkTimerSet = 5;
+    [HideInInspector] public float CAtkTimerSet = 0.5f;
+    [HideInInspector] public float JumpCAtkTimerSet = 0.55f;
+    [HideInInspector] public float ThrowTimerSet = 0.5f;
     private float CocktailCriticAtkTimerSet = 1.6f;
     private float CriticAtkTimerSet = 3.25f;
     private float AtkTimer;
     private float AtkSwitchTimerSet = 2;
     private float AtkSwitchTimer;
-    private float AccumulateTimer;
-    private float AccumulateTimerSet = 1;
-    private float ShootingEndTimer;
-    private float ShootingEndTimerSet = 0.3f;
+    [HideInInspector] public float AccumulateTimerSet = 1;
+    [HideInInspector] public float ShootingEndTimerSet = 0.3f;
     private float ShootAccumulateTimer;
     private float ShootAccumulateTimerSet = 2f;
     private float BigGunTimer;
@@ -86,12 +90,10 @@ public class BattleSystem : MonoBehaviour
     private float BeBlockTimer;
     private float WeakTimerSet = 2.3f;
     private float WeakTimer;
-    private float SharpenBladeTimerSet = 3.5f;
-    private float UseRitualSwordTimerSet = 2.2f;
-    private float SharpTimeSet = 61;//Buff持續時間
-    private float SharpTimeLeft;
-    private float InhibitTimeSet = 61;//Buff持續時間
-    private float InhibitTimeLeft;
+    [HideInInspector] public float SharpenBladeTimerSet = 3.5f;
+    [HideInInspector] public float UseRitualSwordTimerSet = 2.2f;
+    [HideInInspector] public float SharpTimeSet = 61;//Buff持續時間
+    [HideInInspector] public float InhibitTimeSet = 61;//Buff持續時間
 
 
     public static bool isBlockSuccessWait;//格檔成功後等待指令期  有被其他script用到(playerblockjudgement)
@@ -136,7 +138,8 @@ public class BattleSystem : MonoBehaviour
     [HideInInspector] public bool isJumpThrow;//有被其他script用到(playerController)
     [HideInInspector] public bool isCocktailCriticAtk;//有被其他script用到(playerController)
     [HideInInspector] public bool isImpulseJump;//有被其他script用到(playerController)
-    private bool CanAtk;
+    [HideInInspector] public bool CanAtk;
+    [HideInInspector] public bool CanShoot;
     private bool TimerSwitch;
     private bool FirstTrigger = false;
     private bool SecondTrigger = false;
@@ -144,25 +147,18 @@ public class BattleSystem : MonoBehaviour
     private bool shootTimerSwitch;
     private bool BlockTimerSwitch;
     private bool isBeBlockJudgement;
-    private bool isJumpAtkJudgement;
     private bool ShootAccumulateTimerSwitch;
     private bool isAllowBigGun;
     private bool BigGunTimerSwitch;
-    private bool AtkSwitchTimerSwitch;
+    private bool ShouldCalculateAlterAtk;
     private bool CanSecondAtk;
-    private bool WalkThrowFaceRight;
-    private bool WalkThrowFaceLeft;
 
     [Header("攻擊物件")]
     public GameObject Bullet;
-    public GameObject RNormalAtk;
-    public GameObject LNormalAtk;
-    public GameObject RSecondAtk;
-    public GameObject LSecondAtk;
-    public GameObject RCAtk;
-    public GameObject LCAtk;
-    public GameObject RJumpAtk;
-    public GameObject LJumpAtk;
+    public GameObject NormalAtk;
+    public GameObject AlterAtk;
+    public GameObject CAtk;
+    public GameObject JumpAtk;
     public GameObject CockTail;
     public GameObject WalkThrowCocktail;
     public GameObject ExplosionBottle;
@@ -175,8 +171,7 @@ public class BattleSystem : MonoBehaviour
     public GameObject LAimPoint;
     public GameObject RCriticAtk;
     public GameObject LCriticAtk;
-    public GameObject RJumpCAtk;
-    public GameObject LJumpCAtk;
+    public GameObject JumpCAtk;
     public GameObject RBlock;
     public GameObject LBlock;
     public GameObject RBlockNormalAtkAni;
@@ -191,20 +186,12 @@ public class BattleSystem : MonoBehaviour
     public GameObject LCocktailCriticAtk;
     public GameObject ImpulseJumpExplosion;
     //各類型攻擊應該出現地點
-    Vector3 RBulletAppear = new Vector3(1.237f, 0.533f, 0);
-    Vector3 LBulletAppear = new Vector3(-1.237f, 0.533f, 0);
+    [HideInInspector] public Vector3 BulletAppear = new Vector3(1.237f, 0.533f, 0);
     Vector3 RBulletJumpAppear = new Vector3(1.441f, 0.516f, 0);
     Vector3 LBulletJumpAppear = new Vector3(-1.441f, 0.516f, 0);
-    Vector3 RThrowItemAppear = new Vector3(0.8f, 1.21f, 0);
-    Vector3 LThrowItemAppear = new Vector3(-0.8f, 1.21f, 0);
-    Vector3 RWalkThrowItemAppear = new Vector3(0.3f, 1.07f, 0);
-    Vector3 LWalkThrowItemAppear = new Vector3(-0.3f, 1.07f, 0);
-    Vector3 RJumpThrowItemAppear = new Vector3(0.859f, 0.332f, 0);
-    Vector3 LJumpThrowItemAppear = new Vector3(-0.859f, 0.332f, 0);
-    Vector3 RAimAppear = new Vector3(2.505f, 2.175f, 0);
-    Vector3 LAimAppear = new Vector3(-2.505f, 2.175f, 0);
-    Vector3 RCriticAtkAppear = new Vector3(7f, 0.21f, 0);
-    Vector3 LCriticAtkAppear = new Vector3(-7f, 0.21f, 0);
+    [HideInInspector] public Vector3 ThrowItemAppear = new Vector3(0.8f, 1.21f, 0);
+    [HideInInspector] public Vector3 WalkThrowItemAppear = new Vector3(0.3f, 1.07f, 0);
+    [HideInInspector] public Vector3 JumpThrowItemAppear = new Vector3(0.859f, 0.332f, 0);
     Vector3 RImpulseExplosionAppear = new Vector3(-1.057f, -0.055f, 0);
     Vector3 LImpulseExplosionAppear = new Vector3(1.057f, -0.055f, 0);
     public Transform BigGunAppear;//script(BigGunController)
@@ -278,28 +265,18 @@ public class BattleSystem : MonoBehaviour
         {
             CanAtk = true;
         }
-
-        //瞄準被中斷
-        if (isAim)
+        if ((ShootLastTime + ShootCoolDown) <= _time)
         {
-            if (PlayerController.isHurted || _playerController.isDash)
-            {
-                isAim = false;
-                HasAimAppear = false;
-            }
+            CanShoot = true;
         }
 
-        AtkSwitchTimerMethod();
+        CalculateAlterNormalAtk();
 
         BigGunTimerMethod();
-
-        AccumulateTimerMethod();
 
         ShootAccumulateTimerMethod();
 
         BlockTimerMethod();
-
-        ShootTimerMethod();
 
         BlockSuccessTimerMethod();
 
@@ -313,26 +290,6 @@ public class BattleSystem : MonoBehaviour
     private void FixedUpdate()
     {
         _fixedDeltaTime = Time.fixedDeltaTime;
-        
-        //鋒利度持續時間
-        if (isAtkBuff && !GameEvent.isAniPlay)
-        {
-            SharpTimeLeft -= _fixedDeltaTime;
-            if (SharpTimeLeft <= 0)
-            {
-                isAtkBuff = false;
-                ResetAtkPower();
-            }
-        }
-        //抑制蛇神持續時間
-        if (isInhibit && !GameEvent.isAniPlay)
-        {
-            InhibitTimeLeft -= _fixedDeltaTime;
-            if (InhibitTimeLeft <= 0)
-            {
-                isInhibit = false;
-            }
-        }
 
         timer();
 
@@ -494,284 +451,6 @@ public class BattleSystem : MonoBehaviour
     {
         if (TimerSwitch)
         {
-            if (isAtk)
-            {
-                if (isBeBlockSuccess)
-                {
-                    FirstTrigger = false;
-                    isAtk = false;
-                    isJumpAtkJudgement = false;
-                    TimerSwitch = false;
-                    AtkSwitchTimerSwitch = true;
-                    return;
-                }
-                if (!isJumpAtkJudgement)
-                {
-                    if (!PlayerController.isGround)
-                    {
-                        isJumpAtk = true;
-                    }
-                    else
-                    {
-                        isJumpAtk = false;
-                    }
-                    isJumpAtkJudgement = true;
-                }
-                if (isJumpAtk)
-                {
-                    if (AtkTimer <= 0)
-                    {
-                        AtkTimer = AtkTimerSet;
-                    }
-
-                    AtkTimer -= _fixedDeltaTime;
-                    if (AtkTimer <= (AtkTimerSet - 0.067))
-                    {
-                        if (!FirstTrigger)
-                        {
-                            switch (PlayerController.face)
-                            {
-                                case PlayerController.Face.Left:
-                                    Instantiate(LJumpAtk, this.transform.position, Quaternion.identity);
-                                    FirstTrigger = true;
-                                    break;
-                                case PlayerController.Face.Right:
-                                    Instantiate(RJumpAtk, this.transform.position, Quaternion.identity);
-                                    FirstTrigger = true;
-                                    break;
-                            }
-                        }
-                        if (AtkTimer <= 0)
-                        {
-                            _playerController.OnlyCanMove = false;
-                            FirstTrigger = false;
-                            isAtk = false;
-                            isJumpAtkJudgement = false;
-                            _playerController.CantDoAnyThing = false;
-                            TimerSwitch = false;
-                        }
-                    }
-                }
-                else
-                {
-                    if (AtkTimer <= 0)
-                    {
-                        AtkTimer = AtkTimerSet;
-                    }
-
-                    AtkTimer -= _fixedDeltaTime;
-                    if (AtkTimer <= (AtkTimerSet - 0.067))
-                    {
-                        if (!FirstTrigger)
-                        {
-                            switch (PlayerController.face)
-                            {
-                                case PlayerController.Face.Left:
-                                    Instantiate(LNormalAtk, this.transform.position, Quaternion.identity);
-                                    FirstTrigger = true;
-                                    break;
-                                case PlayerController.Face.Right:
-                                    Instantiate(RNormalAtk, this.transform.position, Quaternion.identity);
-                                    FirstTrigger = true;
-                                    break;
-                            }
-                        }
-                        if (AtkTimer <= 0)
-                        {
-                            AtkSwitchTimerSwitch = true;
-                            _playerController.OnlyCanMove = false;
-                            FirstTrigger = false;
-                            isJumpAtkJudgement = false;
-                            isAtk = false;
-                            _playerController.CantDoAnyThing = false;
-                            TimerSwitch = false;
-                        }
-                    }
-                }
-            }
-            if (isSecondAtk)
-            {
-                if (AtkTimer <= 0)
-                {
-                    AtkTimer = AtkTimerSet;
-                }
-
-                if (isBeBlockSuccess)
-                {
-                    FirstTrigger = false;
-                    isSecondAtk = false;
-                    TimerSwitch = false;
-                    CanSecondAtk = false;
-                    AtkSwitchTimerSwitch = false;
-                    return;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-                if (AtkTimer <= (AtkTimerSet - 0.067))
-                {
-                    if (!FirstTrigger)
-                    {
-                        switch (PlayerController.face)
-                        {
-                            case PlayerController.Face.Left:
-                                Instantiate(LSecondAtk, this.transform.position, Quaternion.identity);
-                                FirstTrigger = true;
-                                break;
-                            case PlayerController.Face.Right:
-                                Instantiate(RSecondAtk, this.transform.position, Quaternion.identity);
-                                FirstTrigger = true;
-                                break;
-
-                        }
-                    }
-                    if (AtkTimer <= 0)
-                    {
-                        FirstTrigger = false;
-                        isSecondAtk = false;
-                        _playerController.CantDoAnyThing = false;
-                        TimerSwitch = false;
-                        CanSecondAtk = false;
-                        AtkSwitchTimerSwitch = false;
-                    }
-                }
-            }
-            if (isCAtk)
-            {
-                if (AtkTimer <= 0)
-                {
-                    AtkTimer =  CAtkTimerSet;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-
-                if (AtkTimer <= (CAtkTimerSet - 0.2))
-                {
-                    if (!FirstTrigger)
-                    {
-                        switch (PlayerController.face)
-                        {
-                            case PlayerController.Face.Left:
-                                Instantiate(LCAtk, this.transform.position, Quaternion.identity);
-                                FirstTrigger = true;
-                                break;
-                            case PlayerController.Face.Right:
-                                Instantiate(RCAtk, this.transform.position, Quaternion.identity);
-                                FirstTrigger = true;
-                                break;
-                        }
-                    }
-                    if (AtkTimer <= 0)
-                    {
-                        FirstTrigger = false;
-                        isCAtk = false;
-                        _playerController.CantDoAnyThing = false;
-                        TimerSwitch = false;
-                    }
-                }
-            }
-            if (isJumpCAtk)
-            {
-                if (AtkTimer <= 0)
-                {
-                    _playerController.ShouldIgnoreGravity = true;
-                    Rigid2D.velocity = new Vector2(0, 0);
-                    AtkTimer = JumpCAtkTimerSet;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-
-                if (AtkTimer <= (JumpCAtkTimerSet - 0.1))
-                {
-                    if (!FirstTrigger)
-                    {
-                        switch (PlayerController.face)
-                        {
-                            case PlayerController.Face.Left:
-                                Instantiate(LJumpCAtk, this.transform.position, Quaternion.identity);
-                                FirstTrigger = true;
-                                break;
-                            case PlayerController.Face.Right:
-                                Instantiate(RJumpCAtk, this.transform.position, Quaternion.identity);
-                                FirstTrigger = true;
-                                break;
-                        }
-                    }
-                }
-                if (AtkTimer <= (JumpCAtkTimerSet - 0.3))
-                {
-                    if (!SecondTrigger)
-                    {
-                        _playerController.ShouldIgnoreGravity = false;
-                        SecondTrigger = true;
-                    }
-                }
-                if (AtkTimer <= 0)
-                {
-                    FirstTrigger = false;
-                    SecondTrigger = false;
-                    isJumpCAtk = false;
-                    _playerController.CantDoAnyThing = false;
-                    TimerSwitch = false;
-                }
-                if (PlayerController.isHurted)
-                {
-                    _playerController.ShouldIgnoreGravity = false;
-                    FirstTrigger = false;
-                    SecondTrigger = false;
-                    isJumpCAtk = false;
-                    TimerSwitch = false;
-                    AtkTimer = 0;
-                }
-            }
-            if (isThrowing)
-            {
-                if (AtkTimer <= 0)
-                {
-                    AtkTimer = ThrowTimerSet;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-
-                if (AtkTimer <= (ThrowTimerSet - 0.25))
-                {
-                    if (!FirstTrigger)
-                    {
-                        switch (_itemManage.NowPrepareItem)
-                        {
-                            case itemManage.PrepareItem.Cocktail:
-                                switch (PlayerController.face)
-                                {
-                                    case PlayerController.Face.Left:
-                                        Instantiate(CockTail, this.transform.position + LThrowItemAppear, Quaternion.identity);
-                                        break;
-                                    case PlayerController.Face.Right:
-                                        Instantiate(CockTail, this.transform.position + RThrowItemAppear, Quaternion.identity);
-                                        break;
-                                }
-                                break;
-                            case itemManage.PrepareItem.ExplosionBottle:
-                                switch (PlayerController.face)
-                                {
-                                    case PlayerController.Face.Left:
-                                        Instantiate(ExplosionBottle, this.transform.position + LThrowItemAppear, Quaternion.identity);
-                                        break;
-                                    case PlayerController.Face.Right:
-                                        Instantiate(ExplosionBottle, this.transform.position + RThrowItemAppear, Quaternion.identity);
-                                        break;
-                                }
-                                break;
-                        }
-                        FirstTrigger = true;
-                    }
-                    if (AtkTimer <= 0)
-                    {
-                        FirstTrigger = false;
-                        isThrowing = false;
-                        _playerController.CantDoAnyThing = false;
-                        TimerSwitch = false;
-                    }
-                }
-            }
             if (isCriticAtk)
             {
                 if (AtkTimer <= 0)
@@ -790,12 +469,12 @@ public class BattleSystem : MonoBehaviour
                     {
                         CriticAtkPredictPosition = new Vector3(_criticAtkPredictObject.position.x, _criticAtkPredictObject.position.y, _criticAtkPredictObject.position.z);
                         CriticAtkPredictAngle = AngleCaculate.CaculateAngle("R", _criticAtkPredictObject, _transform);
-                        switch (PlayerController.face)
+                        switch (PlayerController._player.face)
                         {
-                            case PlayerController.Face.Left:
+                            case Face.Left:
                                 Instantiate(LCriticAtk, CalculateCriticAtkPosition(), Quaternion.Euler(0, 0, CriticAtkPredictAngle));
                                 break;
-                            case PlayerController.Face.Right:
+                            case Face.Right:
                                 CriticAtkPredictAngle = AngleCaculate.AngleDirectionChange(CriticAtkPredictAngle);
                                 Instantiate(RCriticAtk, CalculateCriticAtkPosition(), Quaternion.Euler(0, 0, CriticAtkPredictAngle));
                                 break;
@@ -853,146 +532,6 @@ public class BattleSystem : MonoBehaviour
                     }
                 }
             }
-            if (isWalkThrow)
-            {
-                if (AtkTimer <= 0)
-                {
-                    AtkTimer = ThrowTimerSet;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-
-                if (!_playerController.isWalking || PlayerController.isHurted)
-                {
-                    isWalkThrow = false;
-                    TimerSwitch = false;
-                    AtkTimer = CriticAtkTimerSet;
-                    WalkThrowFaceRight = false;
-                    WalkThrowFaceLeft = false;
-                    FirstTrigger = false;
-                    AtkTimer = 0;
-                    return;
-                }
-                if (WalkThrowFaceLeft && PlayerController.face != PlayerController.Face.Left)
-                {
-                    isWalkThrow = false;
-                    TimerSwitch = false;
-                    AtkTimer = CriticAtkTimerSet;
-                    WalkThrowFaceRight = false;
-                    WalkThrowFaceLeft = false;
-                    FirstTrigger = false;
-                }
-                if (WalkThrowFaceRight && PlayerController.face != PlayerController.Face.Right)
-                {
-                    isWalkThrow = false;
-                    TimerSwitch = false;
-                    AtkTimer = CriticAtkTimerSet;
-                    WalkThrowFaceRight = false;
-                    WalkThrowFaceLeft = false;
-                    FirstTrigger = false;
-                }
-                if (AtkTimer <= (ThrowTimerSet - 0.2))
-                {
-                    if (!FirstTrigger)
-                    {
-                        ThrowItemPowerX = WalkThrowCocktailPowerX;
-                        ThrowItemPowerY = WalkThrowCocktailPowerY;
-                        switch (_itemManage.NowPrepareItem)
-                        {
-                            case itemManage.PrepareItem.Cocktail:
-                                switch (PlayerController.face)
-                                {
-                                    case PlayerController.Face.Left:
-                                        Instantiate(WalkThrowCocktail, this.transform.position + LWalkThrowItemAppear, Quaternion.identity);
-                                        break;
-                                    case PlayerController.Face.Right:
-                                        Instantiate(WalkThrowCocktail, this.transform.position + RWalkThrowItemAppear, Quaternion.identity);
-                                        break;
-                                }
-                                _itemManage.CocktailNumber -= 1;
-                                break;
-                            case itemManage.PrepareItem.ExplosionBottle:
-                                switch (PlayerController.face)
-                                {
-                                    case PlayerController.Face.Left:
-                                        Instantiate(WalkThrowExplosionBottle, this.transform.position + LWalkThrowItemAppear, Quaternion.identity);
-                                        break;
-                                    case PlayerController.Face.Right:
-                                        Instantiate(WalkThrowExplosionBottle, this.transform.position + RWalkThrowItemAppear, Quaternion.identity);
-                                        break;
-                                }
-                                _itemManage.ExplosionBottleNumber -= 1;
-                                break;
-                        }
-                        FirstTrigger = true;
-                    }
-                    if(AtkTimer <= 0)
-                    {
-                        isWalkThrow = false;
-                        TimerSwitch = false;
-                        AtkTimer = 0;
-                        WalkThrowFaceRight = false;
-                        WalkThrowFaceLeft = false;
-                        FirstTrigger = false;
-                    }
-                }
-
-            }
-            if (isJumpThrow)
-            {
-                if (AtkTimer <= 0)
-                {
-                    AtkTimer = ThrowTimerSet;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-
-                if (AtkTimer<=(ThrowTimerSet - 0.2))
-                {
-                    if (!FirstTrigger)
-                    {
-                        ThrowItemPowerX = JumpThrowCocktailPowerX;
-                        ThrowItemPowerY = JumpThrowCocktailPowerY;
-                        switch (_itemManage.NowPrepareItem)
-                        {
-                            case itemManage.PrepareItem.Cocktail:
-                                switch (PlayerController.face)
-                                {
-                                    case PlayerController.Face.Right:
-                                        Instantiate(CockTail, new Vector3(this.transform.position.x + RJumpThrowItemAppear.x, this.transform.position.y + RJumpThrowItemAppear.y, 0), Quaternion.identity);
-                                        break;
-                                    case PlayerController.Face.Left:
-                                        Instantiate(CockTail, new Vector3(this.transform.position.x + LJumpThrowItemAppear.x, this.transform.position.y + LJumpThrowItemAppear.y, 0), Quaternion.identity);
-                                        break;
-                                }
-                                _itemManage.CocktailNumber -= 1;
-                                break;
-                            case itemManage.PrepareItem.ExplosionBottle:
-                                switch (PlayerController.face)
-                                {
-                                    case PlayerController.Face.Right:
-                                        Instantiate(ExplosionBottle, new Vector3(this.transform.position.x + RJumpThrowItemAppear.x, this.transform.position.y + RJumpThrowItemAppear.y, 0), Quaternion.identity);
-                                        break;
-                                    case PlayerController.Face.Left:
-                                        Instantiate(ExplosionBottle, new Vector3(this.transform.position.x + LJumpThrowItemAppear.x, this.transform.position.y + LJumpThrowItemAppear.y, 0), Quaternion.identity);
-                                        break;
-                                }
-                                _itemManage.ExplosionBottleNumber -= 1;
-                                break;
-                        }
-                        FirstTrigger = true;
-                    }
-                    if (AtkTimer <= 0)
-                    {
-                        _playerController.CantDoAnyThing = false;
-                        _playerController.OnlyCanMove = false;
-                        FirstTrigger = false;
-                        isJumpThrow = false;
-                        TimerSwitch = false;
-                        AtkTimer = CriticAtkTimerSet;
-                    }
-                }
-            }
             if (isCocktailCriticAtk)
             {
                 if (PlayerController.isHurted)
@@ -1013,12 +552,12 @@ public class BattleSystem : MonoBehaviour
                 {
                     if (!FirstTrigger)
                     {
-                        switch (PlayerController.face)
+                        switch (PlayerController._player.face)
                         {
-                            case PlayerController.Face.Right:
+                            case Face.Right:
                                 Instantiate(RCocktailCriticAtk, this.transform.position, Quaternion.identity);
                                 break;
-                            case PlayerController.Face.Left:
+                            case Face.Left:
                                 Instantiate(LCocktailCriticAtk, this.transform.position, Quaternion.identity);
                                 break;
                         }
@@ -1033,359 +572,54 @@ public class BattleSystem : MonoBehaviour
                     }
                 }
             }
-            if (isSharpen)
-            {
-                if (AtkTimer <= 0)
-                {
-                    AtkTimer = SharpenBladeTimerSet;
-                }
-
-                if (PlayerController.isHurted || _playerController.isDash || GameEvent.isAniPlay)
-                {
-                    isSharpen = false;
-                    TimerSwitch = false;
-                    FirstTrigger = false;
-                    AtkTimer = 0;
-                    _playerController.CantDoAnyThing = false;
-                    return;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-                
-                if (AtkTimer <= (SharpenBladeTimerSet - 2.5f))
-                {
-                    if (!FirstTrigger)
-                    {
-                        SharpBladeSuccess();
-                        FirstTrigger = true;
-                    }
-                }
-                if(AtkTimer <= 0)
-                {
-                    isSharpen = false;
-                    TimerSwitch = false;
-                    FirstTrigger = false;
-                    _playerController.CantDoAnyThing = false;
-                }
-            }
-            if (isUsingRitualSword)
-            {
-                if (AtkTimer <= 0)
-                {
-                    AtkTimer = UseRitualSwordTimerSet;
-                }
-
-                if (PlayerController.isHurted || _playerController.isDash || GameEvent.isAniPlay)
-                {
-                    isUsingRitualSword = false;
-                    TimerSwitch = false;
-                    FirstTrigger = false;
-                    AtkTimer = 0;
-                    _playerController.CantDoAnyThing = false;
-                    return;
-                }
-
-                AtkTimer -= _fixedDeltaTime;
-
-                if (AtkTimer <= (UseRitualSwordTimerSet - 1.1f))
-                {
-                    if (!FirstTrigger)
-                    {
-                        UseRitualSwordSuccess();
-                        FirstTrigger = true;
-                    }
-                }
-                if (AtkTimer <= 0)
-                {
-                    isUsingRitualSword = false;
-                    TimerSwitch = false;
-                    FirstTrigger = false;
-                    _playerController.CantDoAnyThing = false;
-                }
-            }
         }
     }
 
-    private void AtkSwitchTimerMethod()
+    public void BeginAtkCoolDown()
     {
-        if (AtkSwitchTimerSwitch)
+        CanAtk = false;
+        AtkLastTime = _time;
+    }
+    public void BeginCalculateAlterAtk()
+    {
+        ShouldCalculateAlterAtk = true;
+        AtkSwitchTimer = AtkSwitchTimerSet;
+    }
+    public void StopCalculateAlterAtk()
+    {
+        AtkSwitchTimer = 0;
+        ShouldCalculateAlterAtk = false;
+    }
+    private void CalculateAlterNormalAtk()
+    {
+        if (ShouldCalculateAlterAtk)
         {
-            CanSecondAtk = true;
             AtkSwitchTimer -= _deltaTime;
             if (AtkSwitchTimer <= 0)
             {
-                AtkSwitchTimer = AtkSwitchTimerSet;
-                AtkSwitchTimerSwitch = false;
-            }
-        }
-        else
-        {
-            if (!isSecondAtk)
-            {
-                CanSecondAtk = false;
-            }
-            AtkSwitchTimer = AtkSwitchTimerSet;
-        }
-    }
-
-    private void AccumulateTimerMethod()
-    {
-        if (AccumulateTimerSwitch)
-        {
-            AccumulateTimer -= _deltaTime;
-            if (AccumulateTimer <= 0 && GameEvent.TutorialComplete)
-            {
-                isAccumulateComplete = true;
-            }
-            if (PlayerController.isHurted)
-            {
-                isAccumulate = false;
-                _playerController.CantDoAnyThing = false;
-                AccumulateTimerSwitch = false;
-                isAccumulateComplete = false;
-            }
-        }
-        else
-        {
-            AccumulateTimer = AccumulateTimerSet;
-        }
-    }
-
-    public void CocktailJudgeSystem()
-    {
-        if (!_playerController.CantDoAnyThing && PlayerController.isGround)
-        {
-            switch (_itemManage.NowPrepareItem)
-            {
-                case itemManage.PrepareItem.Cocktail:
-                    if (_itemManage.CocktailNumber > 0)
-                    {
-                        if (isAccumulateComplete && SkillPower >= 300)
-                        {
-                            _itemManage.CocktailNumber -= 1;
-                            DecreaseTimes += 10;
-                            isCocktailCriticAtk = true;
-                            _playerController.CantDoAnyThing = true;
-                            TimerSwitch = true;
-                            isAccumulate = false;
-                            AccumulateTimerSwitch = false;
-                            isAccumulateComplete = false;
-                        }
-                        if (CanWalkThrow)
-                        {
-                            isWalkThrow = true;
-                            CanWalkThrow = false;
-                            TimerSwitch = true;
-                            switch (PlayerController.face)
-                            {
-                                case PlayerController.Face.Left:
-                                    WalkThrowFaceLeft = true;
-                                    break;
-                                case PlayerController.Face.Right:
-                                    WalkThrowFaceRight = true;
-                                    break;
-                            }
-                        }
-                        if (!isWalkThrow && !isCocktailCriticAtk)
-                        {
-                            isAim = true;
-                            _playerController.CantDoAnyThing = true;
-                            AimSystem();
-                        }
-                    }
-                    break;
-                case itemManage.PrepareItem.ExplosionBottle:
-                    if (_itemManage.ExplosionBottleNumber > 0)
-                    {
-                        if (isAccumulateComplete && SkillPower >= 300)
-                        {
-                            _itemManage.ExplosionBottleNumber -= 1;
-                            DecreaseTimes += 10;
-                            _playerController.CantDoAnyThing = true;
-                            isImpulseJump = true;
-                            isAccumulate = false;
-                            AccumulateTimerSwitch = false;
-                            isAccumulateComplete = false;
-                        }
-                        if (CanWalkThrow)
-                        {
-                            isWalkThrow = true;
-                            CanWalkThrow = false;
-                            TimerSwitch = true;
-                            switch (PlayerController.face)
-                            {
-                                case PlayerController.Face.Left:
-                                    WalkThrowFaceLeft = true;
-                                    break;
-                                case PlayerController.Face.Right:
-                                    WalkThrowFaceRight = true;
-                                    break;
-                            }
-                        }
-                        if (!isWalkThrow && !isImpulseJump)
-                        {
-                            isAim = true;
-                            _playerController.CantDoAnyThing = true;
-                            AimSystem();
-                        }
-                    }
-                    break;
-            }
-        }
-        if (!_playerController.CantDoAnyThing && !PlayerController.isGround)
-        {
-            switch (_itemManage.NowPrepareItem)
-            {
-                case itemManage.PrepareItem.Cocktail:
-                    if (_itemManage.CocktailNumber > 0)
-                    {
-                        _playerController.CantDoAnyThing = true;
-                        _playerController.OnlyCanMove = true;
-                        TimerSwitch = true;
-                        isJumpThrow = true;
-                    }
-                    break;
-                case itemManage.PrepareItem.ExplosionBottle:
-                    if (_itemManage.ExplosionBottleNumber > 0)
-                    {
-                        if (isAccumulateComplete && SkillPower >= 300)
-                        {
-                            _itemManage.ExplosionBottleNumber -= 1;
-                            DecreaseTimes += 10;
-                            _playerController.CantDoAnyThing = true;
-                            isImpulseJump = true;
-                            isAccumulate = false;
-                            AccumulateTimerSwitch = false;
-                            isAccumulateComplete = false;
-                        }
-                        if (!isImpulseJump)
-                        {
-                            _playerController.CantDoAnyThing = true;
-                            _playerController.OnlyCanMove = true;
-                            TimerSwitch = true;
-                            isJumpThrow = true;
-                        }
-                    }
-                    break;
+                StopCalculateAlterAtk();
             }
         }
     }
-
-    private void AimSystem()
+    public bool JudgeUseAlterNormalAtk()
     {
-        if (!HasAimAppear)
+        if(AtkSwitchTimer > 0)
         {
-            switch (PlayerController.face)
-            {
-                case PlayerController.Face.Left:
-                    LPredictPowerBase.SetActive(true);
-                    LPowerLine.SetActive(true);
-                    LAimPoint.SetActive(true);
-                    LAimPoint.transform.localPosition = LAimAppear;
-                    LAimPoint.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
-                    LPredictPowerBase.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
-                    LPowerLine.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
-                    break;
-                case PlayerController.Face.Right:
-                    RPredictPowerBase.SetActive(true);
-                    RPowerLine.SetActive(true);
-                    RAimPoint.SetActive(true);
-                    RAimPoint.transform.localPosition = RAimAppear;
-                    RAimPoint.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
-                    RPredictPowerBase.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
-                    RPowerLine.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
-                    break;
-            }
-            HasAimAppear = true;
+            return true;
         }
+
+        return false;
     }
 
-    public void AimThrowSystem()
+    public void SharpBladeSuccess()//(1)
     {
-        if (isAim)
-        {
-            switch (PlayerController.face)
-            {
-                case PlayerController.Face.Left:
-                    ThrowItemPowerX = LAimPoint.GetComponent<AimPowerController>().PowerX;
-                    ThrowItemPowerY = LAimPoint.GetComponent<AimPowerController>().PowerY;
-                    break;
-                case PlayerController.Face.Right:
-                    ThrowItemPowerX = RAimPoint.GetComponent<AimPowerController>().PowerX;
-                    ThrowItemPowerY = RAimPoint.GetComponent<AimPowerController>().PowerY;
-                    break;
-            }
-            HasAimAppear = false;
-            isAim = false;
-            switch (_itemManage.NowPrepareItem)
-            {
-                case itemManage.PrepareItem.Cocktail:
-                    _itemManage.CocktailNumber -= 1;
-                    break;
-                case itemManage.PrepareItem.ExplosionBottle:
-                    _itemManage.ExplosionBottleNumber -= 1;
-                    break;
-            }
-            isThrowing = true;
-            TimerSwitch = true;
-            AtkLastTime = _time;
-        }
-    }
-
-    public void BeginSharpenBlade()
-    {
-        if (!isSharpen)
-        {
-            isSharpen = true;
-            TimerSwitch = true;
-            _playerController.CantDoAnyThing = true;
-        }
-    }
-
-    private void SharpBladeSuccess()//(1)
-    {
-        SharpTimeLeft = SharpTimeSet;
-
-        if (isAtkBuff)
-        {
-            return;
-        }
-
         NormalAtkHurtPower *= SharpenerRate;
         CAtkHurtPower *= SharpenerRate;
         CriticAtkHurtPower *= SharpenerRate;
         BlockNormalAtkHurtPower *= SharpenerRate;
         BlockStrongAtkHurtPower *= SharpenerRate;
-        isAtkBuff = true;
     }
-
-    public void BeginUseRitualSword()
-    {
-        if(!itemManage.CheckItemExist(ItemID.UnDeadSnake) && !itemManage.CheckItemExist(ItemID.RebornSnake))
-        {
-            return;
-        }
-
-        if (!isUsingRitualSword)
-        {
-            isUsingRitualSword = true;
-            TimerSwitch = true;
-            _playerController.CantDoAnyThing = true;
-        }
-    }
-
-    private void UseRitualSwordSuccess()//(1)
-    {
-        InhibitTimeLeft = InhibitTimeSet;
-
-        if (isInhibit)
-        {
-            return;
-        }
-        isInhibit = true;
-    }
-
-    private void ResetAtkPower()//(1) 重置攻擊力
+    public void ResetAtkPower()//(1) 重置攻擊力
     {
         NormalAtkHurtPower = NormalAtkHurtPowerSet;
         CAtkHurtPower = CAtkHurtPowerSet;
@@ -1397,8 +631,22 @@ public class BattleSystem : MonoBehaviour
         BlockStrongAtkHurtPower = BlockStrongAtkHurtPowerSet;
         BigGunPower = BigGunPowerSet;
     }
+    public void InhibitSuccess()//(1)
+    {
+        isInhibit = true;
+    }
+    public void InhibitEnd()//(1)
+    {
+        isInhibit = false;
+    }
 
-    public void ShootSystem()
+    public void BeginShootCooldown()
+    {
+        CanShoot = false;
+        ShootLastTime = _time;
+    }
+
+    /*public void ShootSystem()
     {
         if (!_playerController.CantDoAnyThing)
         {
@@ -1406,12 +654,12 @@ public class BattleSystem : MonoBehaviour
             {
                 if (SkillPower >= 900)
                 {
-                    switch (PlayerController.face)
+                    switch (PlayerController._player.face)
                     {
-                        case PlayerController.Face.Left:
+                        case Face.Left:
                             Instantiate(LBigGun, BigGunAppear.position, Quaternion.identity);
                             break;
-                        case PlayerController.Face.Right:
+                        case Face.Right:
                             Instantiate(RBigGun, BigGunAppear.position, Quaternion.identity);
                             break;
                     }
@@ -1424,17 +672,16 @@ public class BattleSystem : MonoBehaviour
                 {
                     if (SkillPower >= 30)
                     {
-                        switch (PlayerController.face)
+                        switch (PlayerController._player.face)
                         {
-                            case PlayerController.Face.Left:
+                            case Face.Left:
                                 Instantiate(Bullet, this.transform.position + LBulletAppear, Quaternion.identity);
                                 break;
-                            case PlayerController.Face.Right:
+                            case Face.Right:
                                 Instantiate(Bullet, this.transform.position + RBulletAppear, Quaternion.identity);
                                 break;
                         }
                         DecreaseTimes += 1;
-                        _playerController.canTurn = false;
                         isShooting = true;
                         shootTimerSwitch = true;
                         ShootingEndTimer = ShootingEndTimerSet;
@@ -1448,30 +695,29 @@ public class BattleSystem : MonoBehaviour
                 {
                     if (PlayerController.isGround)
                     {
-                        switch (PlayerController.face)
+                        switch (PlayerController._player.face)
                         {
-                            case PlayerController.Face.Left:
+                            case Face.Left:
                                 Instantiate(Bullet, this.transform.position + LBulletAppear, Quaternion.identity);
                                 break;
-                            case PlayerController.Face.Right:
+                            case Face.Right:
                                 Instantiate(Bullet, this.transform.position + RBulletAppear, Quaternion.identity);
                                 break;
                         }
                     }
                     else
                     {
-                        switch (PlayerController.face)
+                        switch (PlayerController._player.face)
                         {
-                            case PlayerController.Face.Left:
+                            case Face.Left:
                                 Instantiate(Bullet, this.transform.position + LBulletJumpAppear, Quaternion.identity);
                                 break;
-                            case PlayerController.Face.Right:
+                            case Face.Right:
                                 Instantiate(Bullet, this.transform.position + RBulletJumpAppear, Quaternion.identity);
                                 break;
                         }
                     }
                     DecreaseTimes += 1;
-                    _playerController.canTurn = false;
                     isShooting = true;
                     shootTimerSwitch = true;
                     ShootingEndTimer = ShootingEndTimerSet;
@@ -1479,58 +725,32 @@ public class BattleSystem : MonoBehaviour
                 }
             }
         }
-    }
+    }*/
 
     public void ShootAccumulateEnd()
     {
         if (!isAllowBigGun && SkillPower >= 30 && isBigGunProcess)
         {
-            isBigGunProcess = false;
+            /*isBigGunProcess = false;
             isShootAccumulate = false;
             ShootAccumulateTimerSwitch = false;
             _playerController.CantDoAnyThing = false;
-            switch (PlayerController.face)
+            switch (PlayerController._player.face)
             {
-                case PlayerController.Face.Left:
+                case Face.Left:
                     Instantiate(Bullet, this.transform.position + LBulletAppear, Quaternion.identity);
                     break;
-                case PlayerController.Face.Right:
+                case Face.Right:
                     Instantiate(Bullet, this.transform.position + RBulletAppear, Quaternion.identity);
                     break;
             }
             DecreaseTimes += 1;
-            _playerController.canTurn = false;
             isShooting = true;
             shootTimerSwitch = true;
             ShootingEndTimer = ShootingEndTimerSet;
-            ShootLastTime = _time;
+            ShootLastTime = _time;*/
         }
     }
-
-    private void ShootTimerMethod()
-    {
-        if (shootTimerSwitch)
-        {
-            ShootingEndTimer -= _deltaTime;
-            if (ShootingEndTimer <= 0)
-            {
-                isShooting = false;
-                shootTimerSwitch = false;
-                _playerController.canTurn = true;
-            }
-            if (isAccumulate || isAtk || isCAtk || isJumpCAtk || _playerController.isDash || _playerController.isRestore || isAim || PlayerController.isHurted || GameEvent.isAniPlay)
-            {
-                _playerController.canTurn = true;
-                isShooting = false;
-                shootTimerSwitch = false;
-            }
-        }
-        else
-        {
-            ShootingEndTimer = ShootingEndTimerSet;
-        }
-    }
-
     private void ShootAccumulateTimerMethod()
     {
         if (ShootAccumulateTimerSwitch)
@@ -1627,12 +847,12 @@ public class BattleSystem : MonoBehaviour
             {
                 if (!FirstTrigger)
                 {
-                    switch (PlayerController.face)
+                    switch (PlayerController._player.face)
                     {
-                        case PlayerController.Face.Left:
+                        case Face.Left:
                             Instantiate(LBlock, this.transform.position, Quaternion.identity);
                             break;
-                        case PlayerController.Face.Right:
+                        case Face.Right:
                             Instantiate(RBlock, this.transform.position, Quaternion.identity);
                             break;
                     }
@@ -1668,12 +888,12 @@ public class BattleSystem : MonoBehaviour
             {
                 if (!FirstTrigger)
                 {
-                    switch (PlayerController.face)
+                    switch (PlayerController._player.face)
                     {
-                        case PlayerController.Face.Left:
+                        case Face.Left:
                             Instantiate(LBlockNormalAtkAni, this.transform.position, Quaternion.identity);
                             break;
-                        case PlayerController.Face.Right:
+                        case Face.Right:
                             Instantiate(RBlockNormalAtkAni, this.transform.position, Quaternion.identity);
                             break;
                     }
@@ -1683,12 +903,12 @@ public class BattleSystem : MonoBehaviour
                 {
                     if (!SecondTrigger)
                     {
-                        switch (PlayerController.face)
+                        switch (PlayerController._player.face)
                         {
-                            case PlayerController.Face.Left:
+                            case Face.Left:
                                 Instantiate(LBlockNormalAtk, this.transform.position, Quaternion.identity);
                                 break;
-                            case PlayerController.Face.Right:
+                            case Face.Right:
                                 Instantiate(RBlockNormalAtk, this.transform.position, Quaternion.identity);
                                 break;
                         }
@@ -1713,12 +933,12 @@ public class BattleSystem : MonoBehaviour
                 {
                     if (!FirstTrigger)
                     {
-                        switch (PlayerController.face)
+                        switch (PlayerController._player.face)
                         {
-                            case PlayerController.Face.Left:
+                            case Face.Left:
                                 Instantiate(LBlockStrongAtk, this.transform.position, Quaternion.identity);
                                 break;
-                            case PlayerController.Face.Right:
+                            case Face.Right:
                                 Instantiate(RBlockStrongAtk, this.transform.position, Quaternion.identity);
                                 break;
                         }
@@ -1743,6 +963,10 @@ public class BattleSystem : MonoBehaviour
         }
     }
 
+    public void UseSkillPower(int Cost)
+    {
+        DecreaseTimes += (Cost / 30);
+    }
     private void IncreaseSkillPower()
     {
         if (IncreaseTimes > 0)
@@ -1751,7 +975,6 @@ public class BattleSystem : MonoBehaviour
             IncreaseTimes -= 1;
         }
     }
-
     private void DecreaseSkillPower()
     {
         if (DecreaseTimes > 0)
@@ -1871,7 +1094,6 @@ public class BattleSystem : MonoBehaviour
                 {
                     FirstTrigger = false;
                     isAtk = false;
-                    isJumpAtkJudgement = false;
                     TimerSwitch = false;
                 }
                 if (BeBlockTimer <= (BeBlockTimerSet - 2))
@@ -1938,13 +1160,13 @@ public class BattleSystem : MonoBehaviour
             if (!FirstTrigger)
             {
                 Rigid2D.drag = 5;
-                switch (PlayerController.face)
+                switch (PlayerController._player.face)
                 {
-                    case PlayerController.Face.Right:
+                    case Face.Right:
                         Instantiate(ImpulseJumpExplosion, this.transform.position + RImpulseExplosionAppear, Quaternion.identity);
                         Rigid2D.AddForce(new Vector2(ImpulseJumpPowerX, ImpulseJumpPowerY), ForceMode2D.Impulse);
                         break;
-                    case PlayerController.Face.Left:
+                    case Face.Left:
                         Instantiate(ImpulseJumpExplosion, this.transform.position + LImpulseExplosionAppear, Quaternion.identity);
                         Rigid2D.AddForce(new Vector2(-ImpulseJumpPowerX, ImpulseJumpPowerY), ForceMode2D.Impulse);
                         break;
@@ -1972,7 +1194,7 @@ public class BattleSystem : MonoBehaviour
     {
         bool defend = false;
         bool SealPower = false;
-        if (itemManage.CheckItemExist(ItemID.UnDeadSnake) && !isInhibit)
+        if (ItemManage.CheckItemExist(ItemID.UnDeadSnake) && !isInhibit)
         {
             defend = true;
             SealPower = true;
@@ -1997,7 +1219,7 @@ public class BattleSystem : MonoBehaviour
     private void KillerPointControll()
     {
         //K值
-        if (!_playerController.isCheat)
+        if (!GameEvent.OpenCheat)
         {
             if ((KillerPoint / MaxKillerPoint) >= 0.25 && (KillerPoint / MaxKillerPoint) < 0.75)
             {

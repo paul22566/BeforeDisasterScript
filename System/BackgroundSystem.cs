@@ -99,10 +99,10 @@ public class BackgroundSystem : MonoBehaviour
             switch (PlayerAssignFace)
             {
                 case Face.Left:
-                    PlayerController.face = PlayerController.Face.Left;
+                    PlayerController._player.face = Creature.Face.Left;
                     break;
                 case Face.Right:
-                    PlayerController.face = PlayerController.Face.Right;
+                    PlayerController._player.face = Creature.Face.Right;
                     break;
             }
             //正常進入傳點時進入指定位置

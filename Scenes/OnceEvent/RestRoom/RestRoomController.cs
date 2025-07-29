@@ -83,7 +83,7 @@ public class RestRoomController : MonoBehaviour
             Destroy(Monster2);
             Destroy(Door1);
             Destroy(Door2);
-            if (!itemManage.CheckDocumentExist(4) && GameEvent.SkipRestRoom)
+            if (!ItemManage.CheckDocumentExist(4) && GameEvent.SkipRestRoom)
             {
                 Letter.SetActive(true);
             }

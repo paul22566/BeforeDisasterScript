@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GameEvent
 {
+    public static bool OpenCheat;
     public static bool EnterGameWithNormalWay;//是否用正常方法進入遊戲，測試遊戲專用  其他script有用到(CreatePlayer，playerController，以下皆是)
     public static bool isAniPlay = false;//是否有動畫正在撥放  其他script有用到(playerController,所有怪物controller，各個房間的controller，各個CameraFollow，backgroundSystem，BlackScreen，playerspecialAni)
     public static string NowDataName;//現在在用哪個檔  其他script有用到(CreatePlayer，playerController)

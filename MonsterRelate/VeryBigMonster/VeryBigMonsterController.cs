@@ -387,6 +387,7 @@ public class VeryBigMonsterController : MonoBehaviour
                 if (WaitTimer <= 0)
                 {
                     StatusJudge();
+                    AtkTimer = 0;//預防沒重置的狀況
                     WaitTimer = WaitTimerSet;
                 }
                 break;
@@ -512,6 +513,7 @@ public class VeryBigMonsterController : MonoBehaviour
                 }
                 if (_captureController.CaptureAtkEnd)
                 {
+                    AtkTimer = 0;
                     ReturnToWait();
                     lastStatus = LastStatus.Capture;
                     _captureController.CaptureAtkEnd = false;
@@ -1889,7 +1891,7 @@ public class VeryBigMonsterController : MonoBehaviour
     {
         if (status == Status.Atk4)
         {
-            if (_hurtedController.HurtedNumber == 4)
+            if (Head.HeadHurtNumber == 4)
             {
                 Atk4GetHurtedByExplosion = true;
                 ResetValue();
@@ -1959,7 +1961,6 @@ public class VeryBigMonsterController : MonoBehaviour
                     isSecondPhase = true;
                     SwitchPhaseing = false;
                     SMonsterSecondPhaseAnimation.SetActive(false);
-                    Atk4GetHurtedByExplosion = false;
                     lastStatus = LastStatus.Atk4;
                     Atk4Interrupted = true;
                     ReturnToWait();
@@ -1968,7 +1969,6 @@ public class VeryBigMonsterController : MonoBehaviour
                 if (!SwitchPhaseing)
                 {
                     isSecondPhase = true;
-                    Atk4GetHurtedByExplosion = false;
                     lastStatus = LastStatus.Atk4;
                     status = Status.Weak;
 

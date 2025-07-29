@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class SecretRoomAni : MonoBehaviour
 {
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private PlayerSpecialAni _specialAni;
     private AniMethod _aniMethod;
     private float _time;
@@ -43,7 +43,7 @@ public class SecretRoomAni : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (itemManage.CheckItemExist(ItemID.UnDeadSnake) || itemManage.CheckItemExist(ItemID.WeakUnDeadSnake))
+        if (ItemManage.CheckItemExist(ItemID.UnDeadSnake) || ItemManage.CheckItemExist(ItemID.WeakUnDeadSnake))
         {
             return;
         }
@@ -52,7 +52,7 @@ public class SecretRoomAni : MonoBehaviour
         {
             PlayerTransform = GameObject.Find("player").transform;
             _specialAni = GameObject.Find("player").GetComponent<PlayerSpecialAni>();
-            _aniController = GameObject.Find("player").GetComponent<PlayerAnimationController>();
+            _aniController = GameObject.Find("player").GetComponent<OldPlayerAnimationController>();
         }
         else
         {

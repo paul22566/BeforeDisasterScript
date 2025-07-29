@@ -14,20 +14,20 @@ public class ItemImageOrder : MonoBehaviour
     void Start()
     {
         Timer = TimerSet;
-        Order = itemManage.ItemImageTotalNumber;
+        Order = ItemManage.ItemImageTotalNumber;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(Order < itemManage.ItemImageTotalNumber)
+        if(Order < ItemManage.ItemImageTotalNumber)
         {
             UpNumber += 1;
             Order += 1;
         }
-        if (Order > itemManage.ItemImageTotalNumber)
+        if (Order > ItemManage.ItemImageTotalNumber)
         {
-            Order = itemManage.ItemImageTotalNumber;
+            Order = ItemManage.ItemImageTotalNumber;
         }
     }
 

@@ -22,7 +22,7 @@ public class Training0Controller : MonoBehaviour
     public Animator FadeIn;
     public GameObject EnterContinue;
     private bool WaitingPressEnter;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private PlayerSpecialAni _specialAni;
 
     public AudioClip PaperSound;
@@ -36,7 +36,7 @@ public class Training0Controller : MonoBehaviour
     {
         if (GameObject.Find("player") != null)
         {
-            _aniController = GameObject.Find("player").GetComponent<PlayerAnimationController>();
+            _aniController = GameObject.Find("player").GetComponent<OldPlayerAnimationController>();
             _specialAni = GameObject.Find("player").GetComponent<PlayerSpecialAni>();
             _aniController.AbsoluteAniFalse();
             _specialAni.OpeningAniPlay(1);

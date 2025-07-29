@@ -8,10 +8,12 @@ public class CaptureAtk : MonoBehaviour
     public float TimerSet;
     private float Timer;
     [HideInInspector] public MonsterCaptureController _captureController;
+    [HideInInspector] public MonsterBasicData _basicData;
 
     private void Awake()
     {
         _captureController = transform.parent.parent.GetComponent<MonsterCaptureController>();
+        _basicData = transform.parent.parent.GetComponent<MonsterBasicData>();
     }
     // Start is called before the first frame update
     void Start()

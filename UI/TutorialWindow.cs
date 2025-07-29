@@ -124,7 +124,7 @@ public class TutorialWindow : MonoBehaviour
         //¿ï¶µ²¾°Ê
         if (TutorialButton.NowTutorialButton > 1 && !ShouldLag)
         {
-            if (Input.GetKeyDown(KeyCode.UpArrow) || XboxControllerDetect.isControllerUpPressed || XboxControllerDetect.isCrossUpPressed)
+            if (Input.GetKeyDown(KeyCode.UpArrow) || OldVerXboxControllerDetect.isControllerUpPressed || OldVerXboxControllerDetect.isCrossUpPressed)
             {
                 ShouldLag = true;
                 ShouldPlayMoveSound = true;
@@ -133,7 +133,7 @@ public class TutorialWindow : MonoBehaviour
         }
         if (TutorialButton.NowTutorialButton < TutorialGettingNumber && !ShouldLag)
         {
-            if (Input.GetKeyDown(KeyCode.DownArrow) || XboxControllerDetect.isControllerDownPressed || XboxControllerDetect.isCrossDownPressed)
+            if (Input.GetKeyDown(KeyCode.DownArrow) || OldVerXboxControllerDetect.isControllerDownPressed || OldVerXboxControllerDetect.isCrossDownPressed)
             {
                 ShouldLag = true;
                 ShouldPlayMoveSound = true;

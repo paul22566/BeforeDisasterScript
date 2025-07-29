@@ -49,7 +49,7 @@ public class Boss2RoomController : MonoBehaviour
             }
             else
             {
-                if (!itemManage.CheckItemExist(ItemID.UnderGroundKey))
+                if (!ItemManage.CheckItemExist(ItemID.UnderGroundKey))
                 {
                     UnderGroundKey.transform.position = Boss2DiePosition + new Vector3(0, -0.5f, 0);
                     UnderGroundKey.SetActive(true);
@@ -200,7 +200,7 @@ public class Boss2RoomController : MonoBehaviour
                         UnderGroundKey.transform.position = Boss2DiePosition + new Vector3(0, -0.5f, 0);
                         UnderGroundKey.SetActive(true);
                         SoulItem.SetActive(true);
-                        itemManage.ItemGettingNumber += 1;
+                        ItemManage.ItemGettingNumber += 1;
                         GameEvent.isAniPlay = false;
                         timerSwitch = false;
                     }

@@ -156,7 +156,7 @@ public class Boss3Controller : MonoBehaviour
                 {
                     GameEvent.PassBoss3 = true;
                     GameEvent.KilledBossNumber += 1;
-                    itemManage.ItemGettingNumber += 1;
+                    ItemManage.ItemGettingNumber += 1;
                 }
                 GameEvent.isAniPlay = false;
                 MusicController.BeginFadeOutBGM();

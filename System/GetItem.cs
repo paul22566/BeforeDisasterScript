@@ -10,7 +10,7 @@ public class GetItem : MonoBehaviour
     [SerializeField] private int MapItemID;//999不適用常態規則
 
     public GameObject ItemImage;
-    private itemManage _itemManage;
+    private ItemManage _itemManage;
     private InteractableObject _interactable;
 
     public GameObject GetItemSound;
@@ -21,7 +21,7 @@ public class GetItem : MonoBehaviour
         _interactable._interact += OnInteractItem;
         if (GameObject.Find("FollowSystem") != null)
         {
-            _itemManage = GameObject.Find("FollowSystem").GetComponent<itemManage>();
+            _itemManage = GameObject.Find("FollowSystem").GetComponent<ItemManage>();
         }
         else
         {
@@ -49,13 +49,13 @@ public class GetItem : MonoBehaviour
         if (ItemImage != null)
         {
             ItemImage.SetActive(true);
-            ItemImage.GetComponent<ItemImageOrder>().Order = itemManage.ItemImageTotalNumber;
+            ItemImage.GetComponent<ItemImageOrder>().Order = ItemManage.ItemImageTotalNumber;
         }
         else
         {
             print("NoImage");
         }
-        itemManage.ItemImageTotalNumber += 1;
+        ItemManage.ItemImageTotalNumber += 1;
         Destroy(this.gameObject);
     }
 }

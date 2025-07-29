@@ -335,6 +335,10 @@ public class MonsterHurtedController : MonoBehaviour
 
     public void HurtedControll(float Rate)
     {
+        if (HurtedNumber == 0)
+        {
+            return;
+        }
         switch (HurtedNumber)
         {
             case 1:

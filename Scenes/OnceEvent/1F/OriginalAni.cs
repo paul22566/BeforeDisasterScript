@@ -6,7 +6,7 @@ using UnityEngine;
 public class OriginalAni : MonoBehaviour
 {
     private Transform PlayerTransform;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private PlayerSpecialAni _specialAni;
     private AniMethod _aniMethod;
     public OriginalController RoomController;
@@ -49,7 +49,7 @@ public class OriginalAni : MonoBehaviour
         if (GameObject.Find("player") != null)
         {
             PlayerTransform = GameObject.Find("player").transform;
-            _aniController = GameObject.Find("player").GetComponent<PlayerAnimationController>();
+            _aniController = GameObject.Find("player").GetComponent<OldPlayerAnimationController>();
             _specialAni = GameObject.Find("player").GetComponent<PlayerSpecialAni>();
         }
         if (GameObject.Find("FollowSystem") != null)

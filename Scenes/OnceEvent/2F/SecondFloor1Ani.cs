@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class SecondFloor1Ani : MonoBehaviour
 {
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private AniMethod _aniMethod;
     private float _time;
     private float BeginTime;
@@ -70,7 +70,7 @@ public class SecondFloor1Ani : MonoBehaviour
         if (GameObject.Find("player") != null)
         {
             PlayerTransform = GameObject.Find("player").transform;
-            _aniController = GameObject.Find("player").GetComponent<PlayerAnimationController>();
+            _aniController = GameObject.Find("player").GetComponent<OldPlayerAnimationController>();
         }
         else
         {

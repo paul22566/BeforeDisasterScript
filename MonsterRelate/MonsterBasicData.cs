@@ -87,9 +87,9 @@ public class MonsterBasicData : MonoBehaviour
         {
             return;
         }
-        DistanceX = Distance.CalculateRelativelyDistanceX(MonsterPlace, playerTransform.position);
+        DistanceX = DistanceClass.CalculateRelativelyDistanceX(MonsterPlace, playerTransform.position);
         AbsDistanceX = Mathf.Abs(DistanceX);
-        DistanceY = Distance.CalculateRelativelyDistanceY(MonsterPlace, playerTransform.position);
+        DistanceY = DistanceClass.CalculateRelativelyDistanceY(MonsterPlace, playerTransform.position);
         AbsDistanceY = Mathf.Abs(DistanceY);
         if (DistanceX >= 0)
         {

@@ -1,9 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class itemManage : MonoBehaviour
+public class ItemManage : MonoBehaviour
 {
     /* 回復劑地點:1F-2
      * 汽油彈地點:1F-2
@@ -27,8 +29,8 @@ public class itemManage : MonoBehaviour
     [HideInInspector] public int RestoreItemNumber;//有被其他script用到(playerController，RestoreSpace)
     [HideInInspector] public int CocktailNumber;//有被其他script用到(playerController，PauseMenuController，RestoreSpace)
     [HideInInspector] public int ExplosionBottleNumber;//有被其他script用到(playerController，PauseMenuController，RestoreSpace)
-    public enum PrepareItem { Cocktail, ExplosionBottle, Sharpener, RitualSword }
-    [HideInInspector] public PrepareItem NowPrepareItem;//有被其他script用到(playerController，BattleSystem)
+    public enum UsefulItem { Cocktail, ExplosionBottle, Sharpener, RitualSword }
+    [HideInInspector] public UsefulItem NowPrepareItem;//有被其他script用到(playerController，BattleSystem)
     [HideInInspector] public int NowPrepareItemID;
 
     public static int ItemImageTotalNumber = 0;//有被其他script用到(ItemImageOrder，GetItem)
@@ -48,14 +50,22 @@ public class itemManage : MonoBehaviour
     //需存檔變數
     public static int ItemGettingNumber = 3;//script(ItemWindow，GetItem，itemButton，playerData，Boss1RoomController，Boss2RoomController，Boss3Controller)
     public static int DocumentGettingNumber = 2;//script(ItemWindow，GetItem，itemButton，playerData)
+
+    public GameObject ExplosionBottlePrefab;
+    public GameObject CocktailPrefab;
+
+    public ExplosionBottle _explosionBottle;
+    public Cocktail _cocktail;
+    public Sharpener _sharpener;
+    public RitualSword _ritualSword;
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         if (GameObject.Find("FollowSystem") != null)
         {
             _PlayerData = GameObject.Find("FollowSystem").GetComponent<PlayerData>();
         }
-        NowPrepareItem = PrepareItem.Cocktail;
+        NowPrepareItem = UsefulItem.Cocktail;
         DisappearTimer = DisappearTimerSet;
 
         SEController.inisializeAudioSource(ref ChangeItemSource, ChangeItemSound, this.transform);
@@ -68,7 +78,7 @@ public class itemManage : MonoBehaviour
         switch (NowPrepareItemID)
         {
             case 0:
-                NowPrepareItem = PrepareItem.Cocktail;
+                NowPrepareItem = UsefulItem.Cocktail;
                 CocktailImage.SetActive(true);
                 ExplosionBottleImage.SetActive(false);
                 SharpenerImage.SetActive(false);
@@ -78,7 +88,7 @@ public class itemManage : MonoBehaviour
                 ThrowItem.text = CocktailNumber.ToString();
                 break;
             case 1:
-                NowPrepareItem = PrepareItem.ExplosionBottle;
+                NowPrepareItem = UsefulItem.ExplosionBottle;
                 CocktailImage.SetActive(false);
                 ExplosionBottleImage.SetActive(true);
                 SharpenerImage.SetActive(false);
@@ -88,7 +98,7 @@ public class itemManage : MonoBehaviour
                 ThrowItem.text = ExplosionBottleNumber.ToString();
                 break;
             case 2:
-                NowPrepareItem = PrepareItem.Sharpener;
+                NowPrepareItem = UsefulItem.Sharpener;
                 CocktailImage.SetActive(false);
                 ExplosionBottleImage.SetActive(false);
                 SharpenerImage.SetActive(true);
@@ -97,7 +107,7 @@ public class itemManage : MonoBehaviour
                 ThrowItem.gameObject.SetActive(false);
                 break;
             case 3:
-                NowPrepareItem = PrepareItem.RitualSword;
+                NowPrepareItem = UsefulItem.RitualSword;
                 CocktailImage.SetActive(false);
                 ExplosionBottleImage.SetActive(false);
                 SharpenerImage.SetActive(false);
@@ -204,7 +214,6 @@ public class itemManage : MonoBehaviour
 
         return false;
     }
-
     public static bool CheckDocumentExist(int ID)
     {
         if (DocumentNumberList.Count == 0)
@@ -219,7 +228,6 @@ public class itemManage : MonoBehaviour
 
         return false;
     }
-
     public bool CheckMapItemExist(int ID)
     {
         if (MapItemList.Count == 0)
@@ -233,7 +241,6 @@ public class itemManage : MonoBehaviour
         }
         return false;
     }
-
     public static void ItemListReset()
     {
         ItemGettingNumber = 3;
@@ -259,7 +266,6 @@ public class itemManage : MonoBehaviour
         PrepareItemList[0] = true;
         PrepareItemList[1] = true;
     }
-
     public static void DocumentListReset()
     {
         DocumentGettingNumber = 2;
@@ -277,7 +283,6 @@ public class itemManage : MonoBehaviour
 
         DocumentReadList[0] = true;
     }
-
     public static void MapItemListReset()
     {
         MapItemList.Clear();
@@ -286,7 +291,6 @@ public class itemManage : MonoBehaviour
             MapItemList.Add(false);
         }
     }
-
     public static int ChangePrepareItem(int NowUseOrder)
     {
         int  i = NowUseOrder + 1;
@@ -310,7 +314,6 @@ public class itemManage : MonoBehaviour
         ShouldPlayChangeItemSound = true;
         return 0;
     }
-
     public static void LoadPrepareItemList()
     {
         if (CheckItemExist(ItemID.Sharpener))
@@ -321,6 +324,16 @@ public class itemManage : MonoBehaviour
         {
             PrepareItemList[3] = true;
         }
+    }
+
+    public void InisializeItemClass(BattleSystem battleSystem, PlayerUseNormalItemStatus status, PlayerBuffManager buffManager)
+    {
+        if (ExplosionBottlePrefab.GetComponent<ThrowItemController>() != null)
+            _explosionBottle = new ExplosionBottle(this, ExplosionBottlePrefab.GetComponent<ThrowItemController>(), battleSystem);
+        if (CocktailPrefab.GetComponent<ThrowItemController>() != null)
+            _cocktail = new Cocktail(this, CocktailPrefab.GetComponent<ThrowItemController>(), battleSystem);
+        _sharpener = new Sharpener(battleSystem, status, buffManager.atkPowerBuff);
+        _ritualSword = new RitualSword(battleSystem, status, buffManager.inhibitBuff);
     }
 }
 
@@ -351,4 +364,195 @@ public struct ItemID
     public const int Letter2 = 3;
     public const int Letter3 = 4;
     public const int Letter4 = 5;
+}
+
+public abstract class Item
+{
+    public int id;
+    public ItemManage.UsefulItem Name;
+    protected float UseTimerSet;
+
+    public float GetUseTimer()
+    {
+        return UseTimerSet;
+    }
+}
+public interface IThrowItem
+{
+    public void Throw((float, float) power, Vector3 Location);
+}
+public interface IWalkThrowItem
+{
+    public void WalkThrow((float, float) power, Vector3 Location);
+}
+public interface INormalItem
+{
+    void Begin();
+    void Using(float deltaTime);
+}
+public class ExplosionBottle : Item, IThrowItem, IWalkThrowItem
+{
+    private ItemManage _itemManger;
+    private ThrowItemController _itemObject;
+
+    public ExplosionBottle(ItemManage manager, ThrowItemController itemObject, BattleSystem battle)
+    {
+        id = 4;
+        Name = ItemManage.UsefulItem.ExplosionBottle;
+        _itemManger = manager;
+        _itemObject = itemObject;
+        UseTimerSet = battle.ThrowTimerSet;
+    }
+    public void Throw((float, float) power, Vector3 Location)
+    {
+        _itemManger.ExplosionBottleNumber -= 1;
+
+        ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
+        item.ObjectThrow(power);
+    }
+    public void WalkThrow((float, float) power, Vector3 Location)
+    {
+        _itemManger.ExplosionBottleNumber -= 1;
+
+        ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
+        item.isWalkThrowItem = true;
+        item.ObjectThrow(power);
+    }
+}
+public class Cocktail : Item, IThrowItem, IWalkThrowItem
+{
+    private ItemManage _itemManger;
+    private ThrowItemController _itemObject;
+
+    public Cocktail(ItemManage manager, ThrowItemController itemObject, BattleSystem battle)
+    {
+        id = 3;
+        Name = ItemManage.UsefulItem.Cocktail;
+        _itemManger = manager;
+        _itemObject = itemObject;
+        UseTimerSet = battle.ThrowTimerSet;
+    }
+    public void Throw((float, float) power, Vector3 Location)
+    {
+        _itemManger.CocktailNumber -= 1;
+        
+        ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
+        item.ObjectThrow(power);
+    }
+    public void WalkThrow((float, float) power, Vector3 Location)
+    {
+        _itemManger.CocktailNumber -= 1;
+
+        ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
+        item.isWalkThrowItem = true;
+        item.ObjectThrow(power);
+    }
+}
+public class Sharpener : Item, INormalItem
+{
+    private Buff _powerBuff;
+    private BattleSystem _battleSystem;
+    private PlayerUseNormalItemStatus _status;
+    private float Timer;
+
+    private Queue<TimedEvent> _eventQueue;
+
+    public Sharpener(BattleSystem battle, PlayerUseNormalItemStatus status, Buff AtkBuff)
+    {
+        id = ItemID.Sharpener;
+        Name = ItemManage.UsefulItem.Sharpener;
+
+        _battleSystem = battle;
+        _status = status;
+        _powerBuff = AtkBuff;
+        UseTimerSet = _battleSystem.SharpenBladeTimerSet;
+    }
+    public void Begin()
+    {
+        Timer = UseTimerSet;
+        ResetQueue();
+    }
+    public void Using(float deltaTime)
+    {
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = UseTimerSet - 2.5f, Callback = Event1 },
+                new TimedEvent { TriggerTime = 0, Callback = Event2 },
+            }
+        );
+    }
+    private void Event1()
+    {
+        _powerBuff.AddBuffToSet();
+    }
+    private void Event2()
+    {
+        _status.RemoveCommandFromSet();
+    }
+}
+public class RitualSword : Item, INormalItem
+{
+    private Buff _buff;
+    private BattleSystem _battleSystem;
+    private PlayerUseNormalItemStatus _status;
+    private float Timer;
+
+    private Queue<TimedEvent> _eventQueue;
+
+    public RitualSword(BattleSystem battle, PlayerUseNormalItemStatus status, Buff InhibitBuff)
+    {
+        id = ItemID.RitualSword;
+        Name = ItemManage.UsefulItem.RitualSword;
+
+        _battleSystem = battle;
+        _status = status;
+        _buff = InhibitBuff;
+        UseTimerSet = _battleSystem.UseRitualSwordTimerSet;
+    }
+    public void Begin()
+    {
+        Timer = UseTimerSet;
+        ResetQueue();
+    }
+    public void Using(float deltaTime)
+    {
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = UseTimerSet - 1.1f, Callback = Event1 },
+                new TimedEvent { TriggerTime = 0, Callback = Event2 },
+            }
+        );
+    }
+    private void Event1()
+    {
+        _buff.AddBuffToSet();
+    }
+    private void Event2()
+    {
+        _status.RemoveCommandFromSet();
+    }
 }

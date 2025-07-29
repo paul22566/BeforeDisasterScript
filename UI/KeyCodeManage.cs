@@ -753,7 +753,7 @@ public class KeyCodeManage : MonoBehaviour
                 FirstTurnSkip = true;
                 goto Skip;
             }
-            if (Input.anyKeyDown || XboxControllerDetect.isLTPressed || XboxControllerDetect.isRTPressed || XboxControllerDetect.isCrossDownPressed || XboxControllerDetect.isCrossLeftPressed || XboxControllerDetect.isCrossRightPressed || XboxControllerDetect.isCrossUpPressed)
+            if (Input.anyKeyDown || OldVerXboxControllerDetect.isLTPressed || OldVerXboxControllerDetect.isRTPressed || OldVerXboxControllerDetect.isCrossDownPressed || OldVerXboxControllerDetect.isCrossLeftPressed || OldVerXboxControllerDetect.isCrossRightPressed || OldVerXboxControllerDetect.isCrossUpPressed)
             {
                 InputSelectC();
                 if (!isSelectablePressed)
@@ -1621,37 +1621,37 @@ public class KeyCodeManage : MonoBehaviour
             TempopraryTextC = "RB";
             isSelectablePressed = true;
         }
-        if (XboxControllerDetect.isLTPressed)
+        if (OldVerXboxControllerDetect.isLTPressed)
         {
             TemporaryNumberC = 7;
             TempopraryTextC = "LT";
             isSelectablePressed = true;
         }
-        if (XboxControllerDetect.isRTPressed)
+        if (OldVerXboxControllerDetect.isRTPressed)
         {
             TemporaryNumberC = 8;
             TempopraryTextC = "RT";
             isSelectablePressed = true;
         }
-        if (XboxControllerDetect.isCrossUpPressed)
+        if (OldVerXboxControllerDetect.isCrossUpPressed)
         {
             TemporaryNumberC = 9;
             TempopraryTextC = "UpArrow";
             isSelectablePressed = true;
         }
-        if (XboxControllerDetect.isCrossRightPressed)
+        if (OldVerXboxControllerDetect.isCrossRightPressed)
         {
             TemporaryNumberC = 10;
             TempopraryTextC = "RightArrow";
             isSelectablePressed = true;
         }
-        if (XboxControllerDetect.isCrossDownPressed)
+        if (OldVerXboxControllerDetect.isCrossDownPressed)
         {
             TemporaryNumberC = 11;
             TempopraryTextC = "DownArrow";
             isSelectablePressed = true;
         }
-        if (XboxControllerDetect.isCrossLeftPressed)
+        if (OldVerXboxControllerDetect.isCrossLeftPressed)
         {
             TemporaryNumberC = 12;
             TempopraryTextC = "LeftArrow";
@@ -1919,7 +1919,7 @@ public class KeyCodeManage : MonoBehaviour
                 B = 6;
             }
         }
-        if (XboxControllerDetect.isLTPressed)
+        if (OldVerXboxControllerDetect.isLTPressed)
         {
             if (a == 0)
             {
@@ -1930,7 +1930,7 @@ public class KeyCodeManage : MonoBehaviour
                 b = 7;
             }
         }
-        if (XboxControllerDetect.isLTUp)
+        if (OldVerXboxControllerDetect.isLTUp)
         {
             if (A == 0)
             {
@@ -1941,7 +1941,7 @@ public class KeyCodeManage : MonoBehaviour
                 B = 7;
             }
         }
-        if (XboxControllerDetect.isRTPressed)
+        if (OldVerXboxControllerDetect.isRTPressed)
         {
             if (a == 0)
             {
@@ -1952,7 +1952,7 @@ public class KeyCodeManage : MonoBehaviour
                 b = 8;
             }
         }
-        if (XboxControllerDetect.isRTUp)
+        if (OldVerXboxControllerDetect.isRTUp)
         {
             if (A == 0)
             {
@@ -1963,7 +1963,7 @@ public class KeyCodeManage : MonoBehaviour
                 B = 8;
             }
         }
-        if (XboxControllerDetect.isCrossUpPressed)
+        if (OldVerXboxControllerDetect.isCrossUpPressed)
         {
             if (a == 0)
             {
@@ -1974,7 +1974,7 @@ public class KeyCodeManage : MonoBehaviour
                 b = 9;
             }
         }
-        if (XboxControllerDetect.isCrossUpUp)
+        if (OldVerXboxControllerDetect.isCrossUpUp)
         {
             if (A == 0)
             {
@@ -1985,7 +1985,7 @@ public class KeyCodeManage : MonoBehaviour
                 B = 9;
             }
         }
-        if (XboxControllerDetect.isCrossRightPressed)
+        if (OldVerXboxControllerDetect.isCrossRightPressed)
         {
             if (a == 0)
             {
@@ -1996,7 +1996,7 @@ public class KeyCodeManage : MonoBehaviour
                 b = 10;
             }
         }
-        if (XboxControllerDetect.isCrossRightUp)
+        if (OldVerXboxControllerDetect.isCrossRightUp)
         {
             if (A == 0)
             {
@@ -2007,7 +2007,7 @@ public class KeyCodeManage : MonoBehaviour
                 B = 10;
             }
         }
-        if (XboxControllerDetect.isCrossDownPressed)
+        if (OldVerXboxControllerDetect.isCrossDownPressed)
         {
             if (a == 0)
             {
@@ -2018,7 +2018,7 @@ public class KeyCodeManage : MonoBehaviour
                 b = 11;
             }
         }
-        if (XboxControllerDetect.isCrossDownUp)
+        if (OldVerXboxControllerDetect.isCrossDownUp)
         {
             if (A == 0)
             {
@@ -2029,7 +2029,7 @@ public class KeyCodeManage : MonoBehaviour
                 B = 11;
             }
         }
-        if (XboxControllerDetect.isCrossLeftPressed)
+        if (OldVerXboxControllerDetect.isCrossLeftPressed)
         {
             if (a == 0)
             {
@@ -2040,7 +2040,349 @@ public class KeyCodeManage : MonoBehaviour
                 b = 12;
             }
         }
-        if (XboxControllerDetect.isCrossLeftUp)
+        if (OldVerXboxControllerDetect.isCrossLeftUp)
+        {
+            if (A == 0)
+            {
+                A = 12;
+            }
+            else
+            {
+                B = 12;
+            }
+        }
+
+        if (JumpNumber == a || JumpNumber == b)
+        {
+            JumpPressed = true;
+        }
+        if (JumpNumber == A || JumpNumber == B)
+        {
+            JumpUp = true;
+        }
+
+        if (NormalAtkNumber == a || NormalAtkNumber == b)
+        {
+            NormalAtkPressed = true;
+        }
+        if (NormalAtkNumber == A || NormalAtkNumber == B)
+        {
+            NormalAtkUp = true;
+        }
+
+        if (StrongAtkNumber == a || StrongAtkNumber == b)
+        {
+            StrongAtkPressed = true;
+        }
+
+        if (DashNumber == a || DashNumber == b)
+        {
+            DashPressed = true;
+        }
+
+        if (UseItemNumber == a || UseItemNumber == b)
+        {
+            UseItemPressed = true;
+        }
+        if (UseItemNumber == A || UseItemNumber == B)
+        {
+            UseItemUp = true;
+        }
+
+        if (RestoreNumber == a || RestoreNumber == b)
+        {
+            RestorePressed = true;
+        }
+
+        if (InteractNumber == a || InteractNumber == b)
+        {
+            InteractPressed = true;
+        }
+        if (InteractNumber == A || InteractNumber == B)
+        {
+            InteractUp = true;
+        }
+
+        if (ShootNumber == a || ShootNumber == b)
+        {
+            ShootPressed = true;
+        }
+        if (ShootNumber == A || ShootNumber == B)
+        {
+            ShootUp = true;
+        }
+
+        if (BlockNumber == a || BlockNumber == b)
+        {
+            BlockPressed = true;
+        }
+
+        if (ChangeUseItemNumber == a || ChangeUseItemNumber == b)
+        {
+            ChangeUseItemPressed = true;
+        }
+    }
+
+    public void XboxActionJudge(XboxCommandReceiver recevier)
+    {
+        int a = 0;
+        int A = 0;
+        int b = 0;
+        int B = 0;
+        if (Input.GetKeyDown(KeyCode.JoystickButton0))
+        {
+            if (a == 0)
+            {
+                a = 1;
+            }
+            else
+            {
+                b = 1;
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.JoystickButton0))
+        {
+            if (A == 0)
+            {
+                A = 1;
+            }
+            else
+            {
+                B = 1;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.JoystickButton1))
+        {
+            if (a == 0)
+            {
+                a = 2;
+            }
+            else
+            {
+                b = 2;
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.JoystickButton1))
+        {
+            if (A == 0)
+            {
+                A = 2;
+            }
+            else
+            {
+                B = 2;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.JoystickButton2))
+        {
+            if (a == 0)
+            {
+                a = 3;
+            }
+            else
+            {
+                b = 3;
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.JoystickButton2))
+        {
+            if (A == 0)
+            {
+                A = 3;
+            }
+            else
+            {
+                B = 3;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.JoystickButton3))
+        {
+            if (a == 0)
+            {
+                a = 4;
+            }
+            else
+            {
+                b = 4;
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.JoystickButton3))
+        {
+            if (A == 0)
+            {
+                A = 4;
+            }
+            else
+            {
+                B = 4;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.JoystickButton4))
+        {
+            if (a == 0)
+            {
+                a = 5;
+            }
+            else
+            {
+                b = 5;
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.JoystickButton4))
+        {
+            if (A == 0)
+            {
+                A = 5;
+            }
+            else
+            {
+                B = 5;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.JoystickButton5))
+        {
+            if (a == 0)
+            {
+                a = 6;
+            }
+            else
+            {
+                b = 6;
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.JoystickButton5))
+        {
+            if (A == 0)
+            {
+                A = 6;
+            }
+            else
+            {
+                B = 6;
+            }
+        }
+        if (recevier.isLTPressed)
+        {
+            if (a == 0)
+            {
+                a = 7;
+            }
+            else
+            {
+                b = 7;
+            }
+        }
+        if (recevier.isLTUp)
+        {
+            if (A == 0)
+            {
+                A = 7;
+            }
+            else
+            {
+                B = 7;
+            }
+        }
+        if (recevier.isRTPressed)
+        {
+            if (a == 0)
+            {
+                a = 8;
+            }
+            else
+            {
+                b = 8;
+            }
+        }
+        if (recevier.isRTUp)
+        {
+            if (A == 0)
+            {
+                A = 8;
+            }
+            else
+            {
+                B = 8;
+            }
+        }
+        if (recevier.isCrossUpPressed)
+        {
+            if (a == 0)
+            {
+                a = 9;
+            }
+            else
+            {
+                b = 9;
+            }
+        }
+        if (recevier.isCrossUpUp)
+        {
+            if (A == 0)
+            {
+                A = 9;
+            }
+            else
+            {
+                B = 9;
+            }
+        }
+        if (recevier.isCrossRightPressed)
+        {
+            if (a == 0)
+            {
+                a = 10;
+            }
+            else
+            {
+                b = 10;
+            }
+        }
+        if (recevier.isCrossRightUp)
+        {
+            if (A == 0)
+            {
+                A = 10;
+            }
+            else
+            {
+                B = 10;
+            }
+        }
+        if (recevier.isCrossDownPressed)
+        {
+            if (a == 0)
+            {
+                a = 11;
+            }
+            else
+            {
+                b = 11;
+            }
+        }
+        if (recevier.isCrossDownUp)
+        {
+            if (A == 0)
+            {
+                A = 11;
+            }
+            else
+            {
+                B = 11;
+            }
+        }
+        if (recevier.isCrossLeftPressed)
+        {
+            if (a == 0)
+            {
+                a = 12;
+            }
+            else
+            {
+                b = 12;
+            }
+        }
+        if (recevier.isCrossLeftUp)
         {
             if (A == 0)
             {

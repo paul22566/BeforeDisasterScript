@@ -40,13 +40,13 @@ public class StoreRoomController : MonoBehaviour
         if (GameEvent.DrunkManDie)
         {
             Destroy(DrunkMan);
-            if (!itemManage.CheckDocumentExist(3))
+            if (!ItemManage.CheckDocumentExist(3))
             {
                 ItemLight1.SetActive(true);
             }
         }
 
-        if (itemManage.CheckDocumentExist(3))
+        if (ItemManage.CheckDocumentExist(3))
         {
             Destroy(ItemLight1);
         }
@@ -85,7 +85,7 @@ public class StoreRoomController : MonoBehaviour
 
     private void DrunkManItem()
     {
-        if (!itemManage.CheckDocumentExist(3) && GameEvent.DrunkManDie)
+        if (!ItemManage.CheckDocumentExist(3) && GameEvent.DrunkManDie)
         {
             DieTimer -= _fixedDeltaTime;
 

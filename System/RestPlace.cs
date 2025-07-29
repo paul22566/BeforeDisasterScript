@@ -12,7 +12,7 @@ public class RestPlace : MonoBehaviour
     private bool BeginRest;
     private PlayerController _playerController;
     private InteractableObject _interactable;
-    private itemManage _itemManage;
+    private ItemManage _itemManage;
     private PlayerData _PlayerData;
     public GameObject FadeIn;
     public GameObject FadeInRestPlace;
@@ -35,7 +35,7 @@ public class RestPlace : MonoBehaviour
         AniTimer = AniTimerSet;
         if (GameObject.Find("FollowSystem") != null)
         {
-            _itemManage = GameObject.Find("FollowSystem").GetComponent<itemManage>();
+            _itemManage = GameObject.Find("FollowSystem").GetComponent<ItemManage>();
             _PlayerData = GameObject.Find("FollowSystem").GetComponent<PlayerData>();
         }
         _interactable = this.GetComponent<InteractableObject>();

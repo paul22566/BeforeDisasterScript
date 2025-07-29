@@ -5,7 +5,7 @@ using UnityEngine;
 public class SecretRoomController : MonoBehaviour
 {
     private PlayerData _PlayerData;
-    private itemManage _itemManage;
+    private ItemManage _itemManage;
     private BattleSystem _battleSystem;
     [HideInInspector] public int Status;//0: 待命 1: 魔力量低 2: 魔力量高
 
@@ -54,7 +54,7 @@ public class SecretRoomController : MonoBehaviour
         if (GameObject.Find("FollowSystem") != null)
         {
             _PlayerData = GameObject.Find("FollowSystem").GetComponent<PlayerData>();
-            _itemManage = GameObject.Find("FollowSystem").GetComponent<itemManage>();
+            _itemManage = GameObject.Find("FollowSystem").GetComponent<ItemManage>();
         }
 
         SwitchAni = HiddenDoorSwitch.transform.GetChild(0).GetComponent<Animator>();
@@ -85,7 +85,7 @@ public class SecretRoomController : MonoBehaviour
 
         HiddenDoorSwitch._interact += OnInteractSwitch;
         Altar._interact += OnInteractAltar;
-        if (itemManage.CheckItemExist(ItemID.UnDeadSnake) || itemManage.CheckItemExist(ItemID.WeakUnDeadSnake))
+        if (ItemManage.CheckItemExist(ItemID.UnDeadSnake) || ItemManage.CheckItemExist(ItemID.WeakUnDeadSnake))
         {
             Altar.isValidable = false;
         }

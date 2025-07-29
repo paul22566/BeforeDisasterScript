@@ -58,7 +58,7 @@ public class FirstFloor2Controller : MonoBehaviour
     public static bool Use1F_2Pipeline;
     public InteractableObject PipelineButton;
     private Portal _pipelinePortal;
-    private PlayerAnimationController _aniController;
+    private OldPlayerAnimationController _aniController;
     private GameObject FadeOut;
 
 
@@ -137,7 +137,7 @@ public class FirstFloor2Controller : MonoBehaviour
         {
             if (GameObject.Find("player") != null)
             {
-                _aniController = GameObject.Find("player").GetComponent<PlayerAnimationController>();
+                _aniController = GameObject.Find("player").GetComponent<OldPlayerAnimationController>();
             }
         }
         else
@@ -309,7 +309,7 @@ public class FirstFloor2Controller : MonoBehaviour
             }
             else
             {
-                if (itemManage.CheckItemExist(ItemID.UnderGroundKey))
+                if (ItemManage.CheckItemExist(ItemID.UnderGroundKey))
                 {
                     isUnlockElevator = true;
                     Timer2 = UnlockTimerSet;
@@ -328,7 +328,7 @@ public class FirstFloor2Controller : MonoBehaviour
     {
         if (!GameEvent.ControllerRoomUnlock && !BackgroundSystem.isNoticeDialogAppear)
         {
-            if (itemManage.CheckItemExist(ItemID.ControllerRoomKey))
+            if (ItemManage.CheckItemExist(ItemID.ControllerRoomKey))
             {
                 GameEvent.ControllerRoomUnlock = true;
                 _PlayerData.CommonSave();

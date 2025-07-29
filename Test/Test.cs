@@ -4,12 +4,26 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Test
+public class Test:MonoBehaviour
 {
-    public InteractableObject interactableObject;
-}
+    public Transform a; 
+    private Transform b; 
+    private Transform c;
 
-public class Test2
-{
-    private int Valu;
+    public Transform d;
+    private void Start()
+    {
+        b = a;
+        a = d;
+        c = b;
+
+        Debug.Log(a);
+        Debug.Log(b);
+        Debug.Log(c);
+    }
+
+    public void aaaa(int a)
+    {
+        print(a);
+    }
 }
