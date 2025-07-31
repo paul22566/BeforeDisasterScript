@@ -37,12 +37,6 @@ public class BackgroundSystem : MonoBehaviour
             _playerController = playerObject.GetComponent<PlayerController>();
             //部分開關重置
             _playerController.isUpArrowPressed = false;
-            _playerController.ReceiveRightWalkCommand = false;
-            _playerController.ReceiveLeftWalkCommand = false;
-            _playerController.isKeyZPressed = false;
-            _playerController.touchLeftWall = false;
-            _playerController.touchRightWall = false;
-            _playerController.ShouldJudgeHurt = false;
             _playerTouch = GameObject.Find("PlayerTouchJudgement").GetComponent<PlayerTouchJudgement>();
             _playerTouch.isLeftSideHaveMonster = false;
             _playerTouch.isRightSideHaveMonster = false;
@@ -157,7 +151,6 @@ public class BackgroundSystem : MonoBehaviour
                 PlayerController.isDie = false;
                 CreatePlayer.isLoadGame = false;
                 CreatePlayer.isNewGame = false;
-                playerObject.GetComponent<PlayerController>().DieTimer = playerObject.GetComponent<PlayerController>().DieTimerSet;
                 switch (CheckPoint.CheckPointNumber)
                 {
                     case 0:

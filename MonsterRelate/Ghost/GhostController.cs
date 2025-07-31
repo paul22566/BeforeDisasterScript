@@ -231,11 +231,11 @@ public class GhostController : MonoBehaviour
     {
         if (collider.tag == "Player")
         {
-            if(!_basicData.playerTransform.GetComponent<PlayerController>().isDash && !_basicData.playerTransform.GetComponent<PlayerController>().WeakInvincible)
+            /*if(!_basicData.playerTransform.GetComponent<PlayerController>().isDash && !_basicData.playerTransform.GetComponent<PlayerController>().WeakInvincible)
             {
                 walkStatus = WalkStatus.wait;
                 slowWalkTimerSwitch = true;
-            }
+            }*/
         }
     }
 

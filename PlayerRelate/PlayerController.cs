@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static PlayerCommandManager;
 using static Creature;
+using static PlayerCommandManager;
 
 public class PlayerController : MonoBehaviour
 {
@@ -30,7 +30,7 @@ public class PlayerController : MonoBehaviour
     private PlayerAniController _aniController;
     private PlayerBuffManager _buffManager;
     [HideInInspector] public Transform _transform;
-    public static Rigidbody2D Rigid2D;//有被其他script用到(ghostAtk，normalMonsterAtk，Fireball，BattleSystem, playerUnderJudgement)
+    private Rigidbody2D Rigid2D;//有被其他script用到(ghostAtk，normalMonsterAtk，Fireball，BattleSystem, playerUnderJudgement)
     [HideInInspector] public BoxCollider2D _boxCollider;//有被其他script用到(dashJudgement)
     private BattleSystem _battleSystem;
     private OldPlayerAnimationController _OldAniController;
@@ -48,11 +48,10 @@ public class PlayerController : MonoBehaviour
     public GameObject AtkBuffUI;
     public GameObject DefendBuffUI;
     public GameObject PowerSealUI;
-    public float InvincibleTimerSet;//script(battleSystem)
+    public float HurtedInvincibleTimerSet;//script(battleSystem)
+    [HideInInspector] public float HurtedInvincibleSparkTimerSet = 0.2f;
     public float BlockAtkInvicibleTimerSet;
-    private float InvincibleTimer;
     public float HurtedTimerSet;
-    private float HurtedTimer;
     public float DieTimerSet;//有被其他script用到(BackGroundSystem)
     [HideInInspector] public float DieTimer;//有被其他script用到(BackGroundSystem)
     private float RestoreTimer;
@@ -66,12 +65,7 @@ public class PlayerController : MonoBehaviour
     private RaycastHit2D SpecialCeilingCheck;
 
     private PlayerData _PlayerData;
-    private int MonsterDamageRecord;
-    private float MonsterImpulseXRecord;
-    private float MonsterImpulseYRecord;
-    private Vector3 MonsterAtkPlaceRecord;
-    private NormalMonsterAtk.AtkType MonsterAtkTypeRecord;
-    public static Vector3 PlayerFinalStandPlace = new Vector3();
+    private Vector3 PlayerFinalStandPlace = new Vector3();
 
     //UI
     private PlayerDieController DieUI;
@@ -86,19 +80,14 @@ public class PlayerController : MonoBehaviour
     public static bool CanInteract;//有被其他script用到(interactableObject)
     [HideInInspector] public bool isRestore;//有被其他script用到(battleSystem)
     [HideInInspector] public bool isImpulse;//進入地圖時的推力  有被其他script用到(backgroundsystem，keycodeManage)
-    [HideInInspector] public bool ReceiveRightWalkCommand;//有被其他script用到(backgroundsystem)
-    [HideInInspector] public bool ReceiveLeftWalkCommand;//有被其他script用到(backgroundsystem)
     [HideInInspector] public bool isDash;//是不是dash中，有被其他script用到(dogAtk，BattleSystem，ghostController)
     [HideInInspector] public bool isSaveGame = false;//有被其他script用到(CheckPoint，RestPlace)
     [HideInInspector] public bool touchLeftWall;//有被其他script用到(backgroundsystem，DashJudgement，playerleftJudgement)
     [HideInInspector] public bool touchRightWall;//有被其他script用到(backgroundsystem，DashJudgement，playerRightJudgement)
     [HideInInspector] public bool CantDoAnyThing;//不能做其他事的開關 有被其他script用到(battleSystem，moveAtk，restoreSpace)
-    [HideInInspector] public bool OnlyCanMove;//與CantDoAnyThing放在一起 有被其他script用到(battleSystem)
-    [HideInInspector] public bool isKeyZPressed;//有沒有按著Z鍵 script(backGroundSystem)
     [HideInInspector] public bool isWalking;//是不是在走路 (invincibleTime)
     [HideInInspector] public bool isCeiling;
     private bool isIgnoreGravity;//是否無視重力
-    [HideInInspector] public bool ShouldIgnoreGravity;//是否應當無視重力
     [HideInInspector] public bool isSecondJump;
     [HideInInspector] public bool isJump;
     [HideInInspector] public bool isFall;
@@ -107,7 +96,6 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public bool TouchGrassGround;
     [HideInInspector] public bool TouchMetalGround;
     [HideInInspector] public bool CanDash;
-    private bool TouchGroundDragSet = true;
     private bool RestoreTimerSwitch;
     private bool isDieUIAppear;
     private bool DieByCapture;
@@ -115,17 +103,9 @@ public class PlayerController : MonoBehaviour
 
     //戰鬥相關開關
     public static bool isHurted;//有被其他script用到(initializeColor，battleSystem，playerBlockJudgement，AimpowerController，predictPowerBase，itemWindow，itemButton，DocumentDetail)
+    public InvincibleManager _invincibleManager;
     [HideInInspector] public bool HurtedInvincible;//被怪物攻擊無敵時間
-    [HideInInspector] public bool WeakInvincible;//不會被怪物普攻 但會受到特殊攻擊
-    [HideInInspector] public bool StrongInvincible;//基本上不會被怪物攻擊 但會受到特殊攻擊
-    [HideInInspector] public bool AbsoluteInvincible;//不會受到任何一種形式的攻擊
-    [HideInInspector] public bool HurtingByMoveAtk;//script(MoveAtk)
     [HideInInspector] public bool isBlockAtkInvincible;//script(battleSystem)
-    [HideInInspector] public bool ShouldJudgeHurt;//script(BackGroundSystem)
-    private bool MonsterMoveAtkRecord;
-    private bool MonsterCanBeBlockRecord;
-    private bool MonsterNoAvoidRecord;
-    private bool HurtedTimerSwitch;
 
     [Header("閃避參數")]
     public float DashTime;
@@ -138,7 +118,6 @@ public class PlayerController : MonoBehaviour
     public HashSet<PlayerStatus> FixedUpdateOperateCommands = new HashSet<PlayerStatus>();
 
     public HashSet<Buff> RunningBuffs = new HashSet<Buff>();
-
     //狀態
     private PlayerWaitStatus _waitStatus;
     private PlayerGlidingStatus _glidingStatus;
@@ -157,6 +136,9 @@ public class PlayerController : MonoBehaviour
     private PlayerUseNormalItemStatus _useNormalItemStatus;
     private PlayerUseThrowItemStatus _throwItemStatus;
     private PlayerShootStatus _shootStatus;
+    private PlayerBlockStatus _blockStatus;
+    private PlayerHurtedStatus _hurtedStatus;
+    private PlayerDieStatus _dieStatus;
 
     private PlayerUseItemStart _useItemStart;
     private PlayerAimStop _aimStop;
@@ -168,7 +150,7 @@ public class PlayerController : MonoBehaviour
 
     private PlayerAimLineAnimation _aimLineAnimation;
 
-    private AnimationController NowPlayingAni;
+    public AnimationController NowPlayingAni;
 
     public GameObject AccumulateLight;
     public GameObject SecondJumpFire;
@@ -213,7 +195,6 @@ public class PlayerController : MonoBehaviour
             Item = IdentifyID.FindObject(UICanvas, UIID.Item);
             _itemWindow = Item.GetComponent<ItemWindow>();
         }
-        NewPlayerDataInisialize();
 
         if (_PlayerData == null)
         {
@@ -222,6 +203,8 @@ public class PlayerController : MonoBehaviour
                 _PlayerData = GameObject.Find("FollowSystem").GetComponent<PlayerData>();
             }
         }
+
+        NewPlayerDataInisialize();
     }
 
     void Update()
@@ -240,16 +223,8 @@ public class PlayerController : MonoBehaviour
 
         _deltaTime = Time.deltaTime;
         _time = Time.time;
-        //避免為負or超過
-        if (Hp <= 0)
-        {
-            Hp = 0;
-            HpUI.transform.localScale = new Vector3((float)Hp / (float)MaxHp, HpUI.transform.localScale.y, HpUI.transform.localScale.z);
-        }
-        if (Hp > MaxHp)
-        {
-            Hp = MaxHp;
-        }
+
+        HPJudge();
         //玩家位置
         PlayerPlaceX = _transform.localPosition.x;
         PlayerPlaceY = _transform.localPosition.y;
@@ -263,13 +238,7 @@ public class PlayerController : MonoBehaviour
                 PlayerFinalStandPlace = _transform.position;
             }
             isGround = true;
-            if (TouchGroundDragSet)
-            {
-                Rigid2D.velocity = new Vector2(0, 0);
-                Rigid2D.gravityScale = 0;
-                Rigid2D.drag = 20;
-                TouchGroundDragSet = false;
-            }//同樣的功能在onCollisionEnter也有，放這裡是雙重保險
+
             TouchGroundSoundJudge(GroundCheck);
             TouchGroundSoundJudge(SpecialGroundCheck);
             TouchGroundSoundJudge(_slopeControll.RightGroundRaycast);
@@ -278,10 +247,6 @@ public class PlayerController : MonoBehaviour
         else
         {
             isGround = false;
-            if (!TouchGroundDragSet)
-            {
-                TouchGroundDragSet = true;
-            }
             TouchNormalGround = false;
             TouchGrassGround = false;
             TouchMetalGround = false;
@@ -300,21 +265,17 @@ public class PlayerController : MonoBehaviour
         }
 
         //重力控制
-        OldDragJudge();
+        AutoGravityJudge();
 
         if (isGround && isImpulse)
         {
             isImpulse = false;
         }
-        InvincibleTimerMethod();
-        HurtedTimerMethod();
-        Die();
 
         UIControll();
-
-        InvincibleJudge();
+        
         //常態判定框控制
-        if (StrongInvincible)
+        if (_invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Strong))
         {
             CommonCollider.SetActive(false);
         }
@@ -331,8 +292,10 @@ public class PlayerController : MonoBehaviour
             CanDash = true;
         }
 
+        //跳躍判斷
+        JumpCountJudge();
         //重置
-        if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace)
+        if (Portal.isPortal || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace)
         {
             if (!PauseMenuController.isPauseMenuOpen)
             {
@@ -346,9 +309,7 @@ public class PlayerController : MonoBehaviour
                 RestoreTimerSwitch = false;
                 //雜項
                 _boxCollider.isTrigger = false;
-                isDash = false;
                 CantDoAnyThing = false;
-                ShouldJudgeHurt = false;
                 _playerTouchJudgement.isLeftSideHaveMonster = false;
                 _playerTouchJudgement.isRightSideHaveMonster = false;
                 _playerTouchJudgement.isMonsterUnder = false;
@@ -356,7 +317,7 @@ public class PlayerController : MonoBehaviour
 
             if (!Portal.isPortal && !isImpulse)
             {
-                Rigid2D.gravityScale = 7;
+                RestoreGravity();
             }
 
             if (Portal.isPortal || RestPlace.isOpenRestPlace)
@@ -369,9 +330,6 @@ public class PlayerController : MonoBehaviour
             if (isImpulse || PauseMenuController.OpenAnyMenu  || GameEvent.isAniPlay || _battleSystem.isCaptured)
             {
                 isUpArrowPressed = false;
-                ReceiveRightWalkCommand = false;
-                ReceiveLeftWalkCommand = false;
-                isKeyZPressed = false;
             }
             return;
         }
@@ -380,40 +338,8 @@ public class PlayerController : MonoBehaviour
         OperateCommand(UpdateOperateCommands, _deltaTime);
         OperateBuff(RunningBuffs, _deltaTime);
 
-        if (HurtingByMoveAtk)
-        {
-            //蓄力
-            _battleSystem.isAccumulate = false;
-            _battleSystem.AccumulateTimerSwitch = false;
-            _battleSystem.isAccumulateComplete = false;
-
-            isDash = false;
-        }
-
-        //受傷控制
-        HurtedControll();
-
-        //TouchWallLimit
-        if (touchRightWall)
-        {
-            if (Rigid2D.velocity.x > 0)
-            {
-                Rigid2D.velocity = new Vector2(0, Rigid2D.velocity.y);
-            }
-        }
-        if (touchLeftWall)
-        {
-            if (Rigid2D.velocity.x < 0)
-            {
-                Rigid2D.velocity = new Vector2(0, Rigid2D.velocity.y);
-            }
-        }
-
-        //跳躍判斷
-        JumpCountJudge();
-
         //是否互進行互動判斷
-        if (isUpArrowPressed && !isDash && !_battleSystem.isAim)
+        if (isUpArrowPressed && !_battleSystem.isAim)
         {
             CanInteract = true;
             isUpArrowPressed = false;
@@ -463,7 +389,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (Portal.isPortal || isDie ||  PauseMenuController.OpenAnyMenu || isImpulse ||  _battleSystem.isCaptured || RestPlace.isOpenRestPlace)
+        if (Portal.isPortal ||  PauseMenuController.OpenAnyMenu || isImpulse ||  _battleSystem.isCaptured || RestPlace.isOpenRestPlace)
         {
             return;
         }
@@ -612,35 +538,11 @@ public class PlayerController : MonoBehaviour
         _transform.position = new Vector3(speed * MoveDirection.x * deltaTime + _transform.position.x, speed * MoveDirection.y * deltaTime + _transform.position.y, 0);
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if(collision.gameObject.tag == "platform" || collision.gameObject.tag == "SpecialPlatform")
-        {
-            if (isGround)
-            {
-                Rigid2D.velocity = new Vector2(0, 0);
-                Rigid2D.gravityScale = 0;
-                Rigid2D.drag = 20;
-            }
-        }
-    }
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if (collision.gameObject.tag == "LeftWall")
-        {
-            touchLeftWall = false;
-        }
-        if (collision.gameObject.tag == "RightWall")
-        {
-            touchRightWall = false;
-        }
-    }
-
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.tag == "monsterAtk" && StrongInvincible)
+        if (collision.tag == "monsterAtk" && _invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Strong))
         {
-            RecordMonsterAtkData(collision.transform.GetComponent<NormalMonsterAtk>(), collision.transform);
+            GetHurted(collision.transform?.GetComponent<NormalMonsterAtk>(), collision.transform);
         }//處於強力無敵時才使用這個
         if (collision.GetComponent<DashJudgement>() != null)
         {
@@ -652,67 +554,7 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.tag == "Portal" && !_battleSystem.isCriticAtk && !GameEvent.isAniPlay && !Portal.isPortal)
         {
             collision.gameObject.GetComponent<Portal>().BeginChangeScene();
-            Rigid2D.gravityScale = 0;
-        }
-    }
-
-    void InvincibleTimerMethod()
-    {
-        if (isBlockAtkInvincible)
-        {
-            if (InvincibleTimer <= 0 || HurtedInvincible)
-            {
-                if (HurtedInvincible)
-                {
-                    HurtedInvincible = false;
-                }
-                InvincibleTimer = BlockAtkInvicibleTimerSet;
-            }
-
-            InvincibleTimer -= _deltaTime;
-
-            if (InvincibleTimer <= 0)
-            {
-                isBlockAtkInvincible = false;
-            }
-
-            return;
-        }
-
-        if (HurtedInvincible)
-        {
-            if(InvincibleTimer <= 0)
-            {
-                InvincibleTimer = InvincibleTimerSet;
-            }
-
-            InvincibleTimer -= _deltaTime;
-
-            if (InvincibleTimer <= 0)
-            {
-                HurtedInvincible = false;
-            }
-        }
-    }
-
-    void HurtedTimerMethod()
-    {
-        if (HurtedTimerSwitch)
-        {
-            if (isHurted)
-            {
-                HurtedTimer -= _deltaTime;
-                if (HurtedTimer <= 0)
-                {
-                    CantDoAnyThing = false;
-                    isHurted = false;
-                    HurtedTimerSwitch = false;
-                }
-            }
-        }
-        else
-        {
-            HurtedTimer = HurtedTimerSet;
+            IgnoreGravity(true);
         }
     }
 
@@ -754,7 +596,7 @@ public class PlayerController : MonoBehaviour
 
     public void ReadyToDash()
     {
-        IgnoreGravity();
+        IgnoreGravity(false);
         _boxCollider.isTrigger = true;
     }
     public void DashEnd()
@@ -779,31 +621,13 @@ public class PlayerController : MonoBehaviour
         }
 
         _boxCollider.isTrigger = false;
-        if (isGround)
-        {
-            Rigid2D.gravityScale = 0;
-            Rigid2D.drag = 20;
-        }
-        else
-        {
-            RestoreGravity();
-            Rigid2D.drag = 5;
-        }
+        RestoreGravity();
     }
 
-    void Die()
+    /*void Die()
     {
         if (Hp <= 0)
         {
-            HurtingByMoveAtk = false;
-            MonsterDamageRecord = 0;
-            ShouldJudgeHurt = false;
-            MonsterCanBeBlockRecord = false;
-            MonsterMoveAtkRecord = false;
-            MonsterImpulseXRecord = 0;
-            MonsterImpulseYRecord = 0;
-            MonsterAtkPlaceRecord = new Vector3(0, 0, 0);
-
             if (_battleSystem.isCaptured)
             {
                 DieByCapture = true;
@@ -846,8 +670,20 @@ public class PlayerController : MonoBehaviour
                 isDieUIAppear = false;
             }
         }
+    }*/
+    private void HPJudge()
+    {
+        //避免為負or超過
+        if (Hp <= 0)
+        {
+            _dieStatus.AddCommandToSet();
+            Hp = 0;
+        }
+        if (Hp > MaxHp)
+        {
+            Hp = MaxHp;
+        }
     }
-
     private void OperateCommand(HashSet<PlayerStatus> Set, float deltaTime)
     {
         if (Set.Count == 0)
@@ -901,7 +737,7 @@ public class PlayerController : MonoBehaviour
 
         while (OperateQueue.Count > 0)
         {
-            OperateQueue.Peek().CalculateTimer(deltaTime);
+            OperateQueue.Peek().Execute(deltaTime);
             OperateQueue.Dequeue();
         }
     }
@@ -968,18 +804,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public bool GetYVelocity()
-    {
-        if (Rigid2D.velocity.y >= 0)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
     private void JumpCountJudge()
     {
         if (isGround && !UpdateOperateCommands.Contains(_jumpStatus))
@@ -1016,15 +840,6 @@ public class PlayerController : MonoBehaviour
                 CantDoAnyThing = true;
                 RestoreTimerSwitch = true;
             }
-        }
-    }
-    private void Block()
-    {
-        if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace) return;
-
-        if (GameEvent.TutorialComplete)
-        {
-            _battleSystem.BlockSystem();
         }
     }
     private void OpenItemWindow()
@@ -1125,73 +940,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void InvincibleJudge()
-    {
-        bool CanAbsInvincible = false;
-        bool CanStrongInvincible = false;
-        bool CanWeakInvincible = false;
-
-        if (isDie || HurtingByMoveAtk || Portal.isPortal || BattleSystem.isBlockSuccess || _battleSystem.isBlockNormalAtk || _battleSystem.isBlockStrongAtk || isBlockAtkInvincible)
-        {
-            CanAbsInvincible = true;
-        }//完全無敵
-
-        if (HurtedInvincible)
-        {
-            CanStrongInvincible = true;
-        }
-
-        if (isDash)
-        {
-            CanWeakInvincible = true;
-        }//Weak無敵
-
-        if (CanAbsInvincible)
-        {
-            AbsoluteInvincible = true;
-            StrongInvincible = true;
-            WeakInvincible = true;
-            return;
-        }
-        else
-        {
-            AbsoluteInvincible = false;
-        }
-        if (CanStrongInvincible)
-        {
-            StrongInvincible = true;
-            WeakInvincible = true;
-            return;
-        }
-        else
-        {
-            StrongInvincible = false;
-        }
-        if (CanWeakInvincible)
-        {
-            WeakInvincible = true;
-        }
-        else
-        {
-            WeakInvincible = false;
-        }
-    }
-
-    public void RecordMonsterAtkData(NormalMonsterAtk _atk, Transform AtkTransform)
-    {
-        MonsterImpulseXRecord = _atk.ImpulsePowerX;
-        MonsterImpulseYRecord = _atk.ImpulsePowerY;
-        MonsterDamageRecord = _atk.Damage;
-        ShouldJudgeHurt = true;
-        MonsterCanBeBlockRecord = _atk.CanBeBlock;
-        MonsterNoAvoidRecord = _atk.NoAvoid;
-        MonsterAtkTypeRecord = _atk.Type;
-        if (AtkTransform.GetComponent<MoveAtk>() != null)
-        {
-            MonsterMoveAtkRecord = true;
-        }
-        MonsterAtkPlaceRecord = AtkTransform.position;
-    }
     public void HurtedByCaptureAtk(CaptureAtk _Atk)
     {
         _boxCollider.isTrigger = true;
@@ -1208,144 +956,90 @@ public class PlayerController : MonoBehaviour
         _boxCollider.isTrigger = false;
         HurtedInvincible = true;
     }
-    private void ResetMonsterAtkData()
+
+    public void GetHurted(NormalMonsterAtk _atk, Transform AtkTransform)
     {
-        MonsterDamageRecord = 0;
-        ShouldJudgeHurt = false;
-        MonsterCanBeBlockRecord = false;
-        MonsterNoAvoidRecord = false;
-        MonsterMoveAtkRecord = false;
-        MonsterImpulseXRecord = 0;
-        MonsterImpulseYRecord = 0;
-        MonsterAtkPlaceRecord = new Vector3(0, 0, 0);
+        var data = new MonsterAtkData(_atk.ImpulsePowerX, _atk.ImpulsePowerY, _atk.Damage, _atk.CanBeBlock,
+            _atk.NoAvoid, _atk.Type, AtkTransform.GetComponent<MoveAtk>(), AtkTransform.position);
+
+        HurtedJudge(data);
     }
-    private void HurtedControll()
+    private void HurtedJudge(MonsterAtkData data)
     {
-        if (!ShouldJudgeHurt)
+        if (_invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Absolute))
         {
             return;
         }
 
-        if (!AbsoluteInvincible)
+        if (_battleSystem.isDefendBuff)
         {
-            if (_battleSystem.isDefendBuff)
-            {
-                MonsterDamageRecord = (int)(MonsterDamageRecord * 0.9f);
-            }
-            //無視強力無敵區域
-            if (MonsterMoveAtkRecord)
-            {
-                HurtingByMoveAtk = true;
-
-                HurtedInvincible = true;
-                Hp -= MonsterDamageRecord;
-                _playerSE.HurtedSoundPlay(MonsterAtkTypeRecord);
-                CantDoAnyThing = true;
-                isDash = false;
-                Rigid2D.velocity = new Vector2(0, 0);
-                Rigid2D.gravityScale = 0;
-                ResetMonsterAtkData();
-                return;
-            }
-
-            //-------------------------
-            if (StrongInvincible)
-            {
-                ResetMonsterAtkData();
-                return;
-            }
-
-            if (WeakInvincible && !MonsterNoAvoidRecord)
-            {
-                ResetMonsterAtkData();
-                return;
-            }
-
-            if (_battleSystem.isBlockActualAppear && MonsterCanBeBlockRecord)
-            {
-                switch (_player.face)
-                {
-                    case Face.Left:
-                        if (MonsterAtkPlaceRecord.x >= _transform.position.x)
-                        {
-                            if (_battleSystem.isBlock)
-                            {
-                                Hp -= MonsterDamageRecord / 2;
-                            }
-                            else
-                            {
-                                Hp -= MonsterDamageRecord;
-                            }
-                            HurtedInvincible = true;
-                            isHurted = true;
-                            HurtedTimerSwitch = true;
-                            CantDoAnyThing = true;
-                            _playerSE.HurtedSoundPlay(MonsterAtkTypeRecord);
-                            if (MonsterAtkPlaceRecord.x < _transform.position.x)
-                            {
-                                Rigid2D.AddForce(new Vector2(MonsterImpulseXRecord, MonsterImpulseYRecord), ForceMode2D.Impulse);
-                            }
-                            else
-                            {
-                                Rigid2D.AddForce(new Vector2(-MonsterImpulseXRecord, MonsterImpulseYRecord), ForceMode2D.Impulse);
-                            }
-                        }
-                        break;
-                    case Face.Right:
-                        if (MonsterAtkPlaceRecord.x <= _transform.position.x)
-                        {
-                            if (_battleSystem.isBlock)
-                            {
-                                Hp -= MonsterDamageRecord / 2;
-                            }
-                            else
-                            {
-                                Hp -= MonsterDamageRecord;
-                            }
-                            HurtedInvincible = true;
-                            isHurted = true;
-                            HurtedTimerSwitch = true;
-                            CantDoAnyThing = true;
-                            _playerSE.HurtedSoundPlay(MonsterAtkTypeRecord);
-                            if (MonsterAtkPlaceRecord.x < _transform.position.x)
-                            {
-                                Rigid2D.AddForce(new Vector2(MonsterImpulseXRecord, MonsterImpulseYRecord), ForceMode2D.Impulse);
-                            }
-                            else
-                            {
-                                Rigid2D.AddForce(new Vector2(-MonsterImpulseXRecord, MonsterImpulseYRecord), ForceMode2D.Impulse);
-                            }
-                        }
-                        break;
-                }
-            }
-            else
-            {
-                if (_battleSystem.isBlock)
-                {
-                    Hp -= MonsterDamageRecord / 2;
-                }
-                else
-                {
-                    Hp -= MonsterDamageRecord;
-                }
-                HurtedInvincible = true;
-                isHurted = true;
-                HurtedTimerSwitch = true;
-                CantDoAnyThing = true;
-                _playerSE.HurtedSoundPlay(MonsterAtkTypeRecord);
-                if (MonsterAtkPlaceRecord.x < _transform.position.x)
-                {
-                    Rigid2D.AddForce(new Vector2(MonsterImpulseXRecord, MonsterImpulseYRecord), ForceMode2D.Impulse);
-                }
-                else
-                {
-                    Rigid2D.AddForce(new Vector2(-MonsterImpulseXRecord, MonsterImpulseYRecord), ForceMode2D.Impulse);
-                }
-            }
+            data.MonsterDamageRecord = (int)(data.MonsterDamageRecord * 0.9f);
+        }
+        //無視強力無敵區域
+        if (data.MonsterMoveAtkRecord)
+        {
+            _hurtedStatus.MoveAtk = true;
+            IgnoreGravity(true);
+            HurtedControll(data);
+            return;
         }
 
-        ResetMonsterAtkData();
+        //-------------------------
+        if (_invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Strong))
+        {
+            return;
+        }
+
+        if (_invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Weak) && !data.MonsterNoAvoidRecord)
+        {
+            return;
+        }
+
+        //格檔減傷計算
+        if (_battleSystem.isBlockActualAppear && data.MonsterCanBeBlockRecord)
+        {
+            switch (_player.face)
+            {
+                case Face.Left:
+                    if (data.MonsterAtkPlaceRecord.x >= _transform.position.x)
+                    {
+                        data.MonsterDamageRecord = data.MonsterDamageRecord / 2;
+                    }
+                    break;
+                case Face.Right:
+                    if (data.MonsterAtkPlaceRecord.x <= _transform.position.x)
+                    {
+                        data.MonsterDamageRecord = data.MonsterDamageRecord / 2;
+                    }
+                    break;
+            }
+        }
+        else if (_battleSystem.isBlock)
+        {
+            data.MonsterDamageRecord = data.MonsterDamageRecord / 2;
+        }
+
+        if (data.MonsterAtkPlaceRecord.x > _transform.position.x)
+        {
+            data.MonsterImpulseXRecord = -data.MonsterImpulseXRecord;
+        }
+
+        HurtedControll(data);
+    }
+    private void HurtedControll(MonsterAtkData data)
+    {
+        Hp -= data.MonsterDamageRecord;
+        HurtedInvincible = true;
+        _hurtedStatus.AddCommandToSet();
+        _buffManager.strongInvincibleBuff.AddBuffToSet();
+        _playerSE.HurtedSoundPlay(data.MonsterAtkTypeRecord);
+        Rigid2D.AddForce(new Vector2(data.MonsterImpulseXRecord, data.MonsterImpulseYRecord), ForceMode2D.Impulse);
+    }
+    public void MoveTrapComplete()
+    {
+        _transform.position = PlayerFinalStandPlace;
+        RestoreGravity();
+        _hurtedStatus.RemoveCommandFromSet();
     }
 
     private void UIControll()
@@ -1376,23 +1070,56 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void IgnoreGravity()
+    public float GetYVelocity()
+    {
+        return Rigid2D.velocity.y;
+    }
+    public void SetVelocity(Vector2 velocity)
+    {
+        Rigid2D.velocity = velocity;
+    }
+    public void ForceRigidBody(Vector2 Power, ForceMode2D mode)
+    {
+        Rigid2D.AddForce(Power, mode);
+    }
+    public void IgnoreGravity(bool AbsoluteStop)
     {
         isIgnoreGravity = true;
         Rigid2D.gravityScale = 0;
-        Rigid2D.velocity = new Vector3(Rigid2D.velocity.x, 0,0);
+        if (AbsoluteStop)
+        {
+            Rigid2D.velocity = new Vector3(0, 0, 0);
+        }
+        else
+        {
+            Rigid2D.velocity = new Vector3(Rigid2D.velocity.x, 0, 0);
+        }
     }
     public void RestoreGravity()
     {
         isIgnoreGravity = false;
         Rigid2D.gravityScale = 7;
     }
-    private void OldDragJudge()
+    private void AutoGravityJudge()
     {
-        if (!isGround && !isIgnoreGravity)
+        bool ShouldChange = false;
+        (int, int) ChangeValue = (7,5);
+
+        if (!isGround && !isIgnoreGravity && Rigid2D.gravityScale != 7)
         {
-            Rigid2D.gravityScale = 7;
-            Rigid2D.drag = 5;
+            ShouldChange = true;
+            ChangeValue = (7, 5);
+        }
+        if (isGround && Rigid2D.gravityScale != 0)
+        {
+            ShouldChange = true;
+            ChangeValue = (0, 20);
+        }
+
+        if (ShouldChange)
+        {
+            Rigid2D.gravityScale = ChangeValue.Item1;
+            Rigid2D.drag = ChangeValue.Item2;
         }
     }
 
@@ -1403,7 +1130,7 @@ public class PlayerController : MonoBehaviour
 
     public void NewRecordMonsterAtkData(MonsterAtk _atk, Transform AtkTransform)
     {
-        MonsterImpulseXRecord = _atk.ImpulsePowerX;
+        /*MonsterImpulseXRecord = _atk.ImpulsePowerX;
         MonsterImpulseYRecord = _atk.ImpulsePowerY;
         MonsterDamageRecord = _atk.Damage;
         ShouldJudgeHurt = true;
@@ -1425,7 +1152,7 @@ public class PlayerController : MonoBehaviour
         {
             MonsterMoveAtkRecord = true;
         }
-        MonsterAtkPlaceRecord = AtkTransform.position;
+        MonsterAtkPlaceRecord = AtkTransform.position;*/
     }
 
     public void NewPlayerDataInisialize()
@@ -1440,17 +1167,20 @@ public class PlayerController : MonoBehaviour
         _aniController.throwItemAni.AssignImage(AimCocktailImage, AimExplosionBottleImage);
         _aniController.walkThrowAni.AssignImage(WalkThrowCocktailImage, WalkThrowExplosionBottleImage);
         _aniController.jumpThrowAni.AssignImage(JumpThrowCocktailImage, JumpThrowExplosionBottleImage);
+        _invincibleManager = new InvincibleManager();
         _buffManager = new PlayerBuffManager(this, _battleSystem);
 
         _waitStatus = new PlayerWaitStatus(this, _aniController.waitAni);
         _fallWaitStatus = new PlayerFallWaitStatus(this, _aniController.jumpAni, LongFallWaitTimerSet);
         _glidingStatus = new PlayerGlidingStatus(this, _aniController.jumpAni, _fallWaitStatus, LongFallTimerSet);
+        _hurtedStatus = new PlayerHurtedStatus(this, _aniController.hurtedAni);
+        _dieStatus = new PlayerDieStatus(this, _aniController.dieAni, _invincibleManager, _PlayerData, DieUI);
 
         _rightMoveStatus = new PlayerRightMoveStatus(this, _aniController.runAni, Speed, Move);
         _leftMoveStatus = new PlayerLeftMoveStatus(this, _aniController.runAni, Speed, Move);
         _rightMoveStop = new PlayerMoveStop(_rightMoveStatus);
         _leftMoveStop = new PlayerMoveStop(_leftMoveStatus);
-        _jumpStatus = new PlayerJumpStatus(this, Rigid2D, _aniController.jumpAni, SecondJumpFire, JumpBreakJudge, JumpForce, SpeedlimitY, SecondJumpTimerSet);
+        _jumpStatus = new PlayerJumpStatus(this, _aniController.jumpAni, SecondJumpFire, JumpBreakJudge, JumpForce, SpeedlimitY, SecondJumpTimerSet);
         _jumpStop = new PlayerJumpStop(_jumpStatus);
         _dashStatus = new PlayerDashStatus(this, _aniController.dashAni, Move);
 
@@ -1462,6 +1192,7 @@ public class PlayerController : MonoBehaviour
 
         _accumulateStatus = new PlayerAcumulateStatus(this, _battleSystem.AccumulateTimerSet, AccumulateLight);
         _accumulateStop = new PlayerAcumulateStop(_battleSystem, _accumulateStatus, _normalAtkStatus, _jumpAtkStatus, _normalAtkStatus);
+        _blockStatus = new PlayerBlockStatus(this, _battleSystem, _aniController.blockAni);
 
         _changeItem = new PlayerChangeItem(_itemManage);
         _aimLineAnimation = new PlayerAimLineAnimation(_battleSystem);
@@ -1492,15 +1223,40 @@ public class PlayerController : MonoBehaviour
             _inputManager.SubscribeCommand(Command.ChangeItem, CommandType.Pressed, _changeItem);
             _inputManager.SubscribeCommand(Command.Dash, CommandType.Pressed, _dashStatus);
             _inputManager.SubscribeCommand(Command.Shoot, CommandType.Pressed, _shootStatus);
+            _inputManager.SubscribeCommand(Command.Block, CommandType.Pressed, _blockStatus);
 
             /*
             _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Restore, PlayerCommandManager.CommandType.Pressed, Restore);
-            _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Block, PlayerCommandManager.CommandType.Pressed, Block);
             _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.ItemWindow, PlayerCommandManager.CommandType.Pressed, OpenItemWindow);
             _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Interact, PlayerCommandManager.CommandType.Pressed, Interact);
             _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Interact, PlayerCommandManager.CommandType.Up, InteractEnd);*/
         }
 
         AddDefaultMode();
+    }
+}
+
+public struct MonsterAtkData
+{
+    public float MonsterImpulseXRecord;
+    public float MonsterImpulseYRecord;
+    public int MonsterDamageRecord;
+    public bool MonsterCanBeBlockRecord;
+    public bool MonsterNoAvoidRecord;
+    public NormalMonsterAtk.AtkType MonsterAtkTypeRecord;
+    public bool MonsterMoveAtkRecord;
+    public Vector3 MonsterAtkPlaceRecord;
+
+    public MonsterAtkData(float powerX, float powerY, int damage, bool canBeBlock, bool avoid, 
+        NormalMonsterAtk.AtkType type, bool moveAtk, Vector3 place)
+    {
+        MonsterImpulseXRecord = powerX;
+        MonsterImpulseYRecord = powerY;
+        MonsterDamageRecord = damage;
+        MonsterCanBeBlockRecord = canBeBlock;
+        MonsterNoAvoidRecord = avoid;
+        MonsterAtkTypeRecord = type;
+        MonsterMoveAtkRecord = moveAtk;
+        MonsterAtkPlaceRecord = place;
     }
 }

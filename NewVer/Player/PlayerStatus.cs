@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using static PlayerStatus;
 
@@ -11,7 +12,7 @@ public abstract class PlayerStatus
     {
         Wait, Gliding, LeftMove, RightMove, Accumulate, NormalAtk, StrongAtk, 
         CriticAtk, Jump, JumpAtk, JumpThrow, Restore, UseNormalItem, UseThrowItem, 
-        Dash, Shoot, Block, WalkThrow, Hurted, FallWait, Die
+        Dash, Shoot, Block,BlockAtk, WalkThrow, Hurted, FallWait, Die
     };
     public enum OperateType { Update, FixedUpdate, Both}
     protected PlayerController _controller;
@@ -19,6 +20,7 @@ public abstract class PlayerStatus
     protected Status _statusType;
     public HashSet<Status> CommandReplaceSet = new HashSet<Status>();
     public HashSet<Status> CommandCoexistSet = new HashSet<Status>();
+    protected bool isInitializeSuccess;
 
     public abstract void Inisialize(Status status, OperateType operateType);
     public abstract void Begin();
@@ -270,7 +272,7 @@ public class PlayerGlidingStatus : PlayerStatus, IPlayerAniUser
     {
         _controller.SetAnimation(_ani);
         _controller.PlayAnimation();
-        if (!_controller.GetYVelocity())
+        if (_controller.GetYVelocity() < 0)
         {
             _ani.ChangeAnimator("isFalling", "true");
         }
@@ -289,7 +291,7 @@ public class PlayerGlidingStatus : PlayerStatus, IPlayerAniUser
             LongFallTimer -= deltaTime;
         }
         
-        if (!_controller.GetYVelocity())
+        if (_controller.GetYVelocity() < 0)
         {
             _ani.ChangeAnimator("isFalling", "true");
         }
@@ -808,11 +810,14 @@ public class PlayerDashStatus : PlayerStatus, IPlayerAniUser, IObserver
 
         _controller.ReadyToDash();
         Timer = TimerSet;
+
+        _controller._invincibleManager.AddInvincible(InvincibleManager.InvincibleType.Weak);
     }
     public override void End()
     {
         _controller.StopAnimation(_ani);
         _controller.DashEnd();
+        _controller._invincibleManager.RemoveInvincible(InvincibleManager.InvincibleType.Weak);
     }
     public override void FixedExecute(float deltaTime)
     {
@@ -838,7 +843,6 @@ public class PlayerDashStatus : PlayerStatus, IPlayerAniUser, IObserver
 }
 public class PlayerJumpStatus : PlayerStatus, IObserver, IPlayerAniUser
 {
-    private Rigidbody2D _rigidBody;
     private PlayerJumpAni _ani;
     private GameObject SecondJumpFire;
     private Func<bool> _jumpBreakJudge;
@@ -852,11 +856,10 @@ public class PlayerJumpStatus : PlayerStatus, IObserver, IPlayerAniUser
 
     private float ConstantNumber;
 
-    public PlayerJumpStatus(PlayerController controller, Rigidbody2D rigid, PlayerJumpAni ani,
+    public PlayerJumpStatus(PlayerController controller, PlayerJumpAni ani,
         GameObject jumpFire, Func<bool> breakJudge, float Force, float Limit, float SecondJumpTimerSet)
     {
         _controller = controller;
-        _rigidBody = rigid;
         _ani = ani;
         SecondJumpFire = jumpFire;
         _jumpBreakJudge = breakJudge;
@@ -951,11 +954,11 @@ public class PlayerJumpStatus : PlayerStatus, IObserver, IPlayerAniUser
             RemoveCommandFromSet();
         }
 
-        if (JumpState == 1 && _rigidBody.velocity.y > SpeedLimit)
+        if (JumpState == 1 && _controller.GetYVelocity() > SpeedLimit)
         {
             JumpState = 0;
         }
-        if (JumpState == 2 && _rigidBody.velocity.y > (SpeedLimit / 1.2f))
+        if (JumpState == 2 && _controller.GetYVelocity() > (SpeedLimit / 1.2f))
         {
             JumpState = 0;
         }
@@ -994,11 +997,11 @@ public class PlayerJumpStatus : PlayerStatus, IObserver, IPlayerAniUser
             if (JumpForceCount <= 10)
             {
                 JumpForceCount++;
-                _rigidBody.AddForce(new Vector2(0, (JumpForce / 2) + (ConstantNumber * JumpForce * JumpForceCount)), ForceMode2D.Impulse);
+                _controller.ForceRigidBody(new Vector2(0, (JumpForce / 2) + (ConstantNumber * JumpForce * JumpForceCount)), ForceMode2D.Impulse);
             }
             else
             {
-                _rigidBody.AddForce(new Vector2(0, JumpForce), ForceMode2D.Impulse);
+                _controller.ForceRigidBody(new Vector2(0, JumpForce), ForceMode2D.Impulse);
             }
         }
         if (JumpState == 2)
@@ -1006,7 +1009,7 @@ public class PlayerJumpStatus : PlayerStatus, IObserver, IPlayerAniUser
             if (JumpForceCount <= 10)
             {
                 JumpForceCount++;
-                _rigidBody.AddForce(new Vector2(0, (JumpForce / 2) + (ConstantNumber * JumpForce * JumpForceCount)), ForceMode2D.Impulse);
+                _controller.ForceRigidBody(new Vector2(0, (JumpForce / 2) + (ConstantNumber * JumpForce * JumpForceCount)), ForceMode2D.Impulse);
             }
         }
     }
@@ -1094,6 +1097,71 @@ public class PlayerAcumulateStatus : PlayerStatus, IObserver
         if (_accumulateLight != null) 
         {
             _accumulateLight.transform.localPosition = _controller._transform.localPosition;
+        }
+    }
+}
+public class PlayerHurtedStatus : PlayerStatus, IPlayerAniUser
+{
+    private PlayerHurtedAni _ani;
+    private float Timer;
+    private float TimerSet;
+    public bool MoveAtk;
+    public PlayerHurtedStatus(PlayerController controller, PlayerHurtedAni ani)
+    {
+        _controller = controller;
+
+        Inisialize(Status.Hurted, OperateType.Update);
+        _ani = ani;
+        TimerSet = controller.HurtedTimerSet;
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        Timer = TimerSet;
+
+        if (MoveAtk)
+        {
+            _controller._invincibleManager.AddInvincible(InvincibleManager.InvincibleType.Absolute);
+        }
+    }
+    public override void End()
+    {
+        _controller.StopAnimation(_ani);
+        if (MoveAtk)
+        {
+            _controller._invincibleManager.RemoveInvincible(InvincibleManager.InvincibleType.Absolute);
+            MoveAtk = false;
+        }
+    }
+    public override void Execute(float deltaTime)
+    {
+        if (MoveAtk)
+            return;
+
+        Timer -= deltaTime;
+
+        if (Timer <= 0)
+        {
+            RemoveCommandFromSet();
         }
     }
 }
@@ -1218,7 +1286,7 @@ public class PlayerStrongAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
     private BattleSystem _battleSystem;
     private GameObject AtkPrefab;
     private GameObject JumpAtkPrefab;
-    private Action IgnoreGravity;
+    private Action<bool> IgnoreGravity;
     private Action RestoreGravity;
     private float TimerSet;
     private float JumpTimerSet;
@@ -1227,7 +1295,7 @@ public class PlayerStrongAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
     private bool isJumpAtk;
     private int AtkCost;
     public PlayerStrongAtkStatus(PlayerController controller, BattleSystem battle, PlayerStrongAtkAni Ani, float TotalTime, float JumpTotalTime, 
-        GameObject AtkObject, GameObject jumpAtk, Action ignore, Action Restore, int atkCost)
+        GameObject AtkObject, GameObject jumpAtk, Action<bool> ignore, Action Restore, int atkCost)
     {
         _controller = controller;
         _battleSystem = battle;
@@ -1278,7 +1346,7 @@ public class PlayerStrongAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
         if (!PlayerController.isGround)
         {
             isJumpAtk = true;
-            IgnoreGravity();
+            IgnoreGravity?.Invoke(true);
             Timer = JumpTimerSet;
             _ani.ChangeAnimator("isJump", "true");
         }
@@ -1290,6 +1358,7 @@ public class PlayerStrongAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
         _controller.StopAnimation(_ani);
         isJumpAtk = false;
         _battleSystem.BeginAtkCoolDown();
+        RestoreGravity?.Invoke();
     }
     public override void FixedExecute(float deltaTime)
     {
@@ -1353,7 +1422,7 @@ public class PlayerStrongAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
     }
     private void Event1_5()
     {
-        RestoreGravity();
+        RestoreGravity?.Invoke();
     }
 }
 public class PlayerJumpAtkStatus : PlayerStatus, IPlayerAniUser
@@ -1459,6 +1528,7 @@ public class PlayerShootStatus : PlayerStatus, IObserver, IPlayerAniUser
     private PlayerRightMoveStatus _rightMoveStatus;
     private GameObject Bullet;
     private Vector3 AppearPlace;
+    private Vector3 JumpAppearPlace;
     private float Speed;
     private float Timer;
     private float TimerSet;
@@ -1473,6 +1543,7 @@ public class PlayerShootStatus : PlayerStatus, IObserver, IPlayerAniUser
         Speed = _controller.ShootingSpeed;
         Bullet = _battleSystem.Bullet;
         AppearPlace = _battleSystem.BulletAppear;
+        JumpAppearPlace = _battleSystem.BulletJumpAppear;
         TimerSet = _battleSystem.ShootingEndTimerSet;
 
         Inisialize(Status.Shoot, OperateType.Update);
@@ -1576,14 +1647,20 @@ public class PlayerShootStatus : PlayerStatus, IObserver, IPlayerAniUser
         _battleSystem.UseSkillPower(_battleSystem.ShootCost);
 
         Vector3 location = _controller._transform.localPosition;
+        Vector3 appearPlace = AppearPlace;
+        if (!PlayerController.isGround)
+        {
+            appearPlace = JumpAppearPlace;
+        }
+
         switch (PlayerController._player.face)
         {
             case Creature.Face.Left:
-                location = new Vector3(location.x - AppearPlace.x, location.y + AppearPlace.y, location.z);
+                location = new Vector3(location.x - appearPlace.x, location.y + appearPlace.y, location.z);
                 GameObject.Instantiate(Bullet, location, Quaternion.identity);
                 break;
             case Creature.Face.Right:
-                location = new Vector3(location.x + AppearPlace.x, location.y + AppearPlace.y, location.z);
+                location = new Vector3(location.x + appearPlace.x, location.y + appearPlace.y, location.z);
                 GameObject.Instantiate(Bullet, location, Quaternion.identity);
                 break;
         }
@@ -1958,6 +2035,349 @@ public class PlayerJumpThrowStatus : PlayerStatus, IPlayerAniUser
         }
         location = new Vector3(location.x + AppearPlace.x, location.y + AppearPlace.y, location.z);
         _throwItem.WalkThrow(power, location);
+    }
+    private void Event2()
+    {
+        RemoveCommandFromSet();
+    }
+}
+
+public class PlayerDieStatus : PlayerStatus, IPlayerAniUser
+{
+    private PlayerData _playerData;
+    private PlayerDieController DieUI;
+    private InvincibleManager _invincibleManager;
+    private PlayerDieAni _ani;
+    private float Timer;
+    private float TimerSet;
+    private Queue<TimedEvent> _eventQueue;
+    public PlayerDieStatus(PlayerController controller, PlayerDieAni ani, InvincibleManager invincible, PlayerData playerData, PlayerDieController dieUI)
+    {
+        _controller = controller;
+        _invincibleManager = invincible;
+        _playerData = playerData;
+        _ani = ani;
+        DieUI = dieUI;
+
+        Inisialize(Status.Die, OperateType.Update);
+
+        TimerSet = controller.DieTimerSet;
+
+        if(_controller != null && _playerData!= null && _ani != null && DieUI != null && _invincibleManager != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        PlayerController.isDie = true;
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        _invincibleManager.AddInvincible(InvincibleManager.InvincibleType.Absolute);
+        _playerData.CommonSave();
+        ResetQueue();
+        Timer = TimerSet;
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.StopAnimation(_ani);
+        _invincibleManager.RemoveInvincible(InvincibleManager.InvincibleType.Absolute);
+        DieUI.ResetDie();
+    }
+    public override void Execute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+
+        if (_controller.Hp > 0)
+        {
+            RemoveCommandFromSet();
+        }
+    }
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = 0, Callback = Event1 },
+            }
+        );
+    }
+    private void Event1()
+    {
+        DieUI.gameObject.SetActive(true);
+    }
+}
+public class PlayerBlockStatus : PlayerStatus, IPlayerAniUser, IObserver
+{
+    private BattleSystem _battleSystem;
+    private PlayerBlockAni _ani;
+    private GameObject BlockPrefab;
+    private float TimerSet;
+    private float Timer;
+    private Queue<TimedEvent> _eventQueue;
+
+    public PlayerBlockStatus(PlayerController controller, BattleSystem battle, PlayerBlockAni Ani)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _ani = Ani;
+
+        Inisialize(Status.Block, OperateType.FixedUpdate);
+
+        TimerSet = _battleSystem.BlockTimerSet;
+        BlockPrefab = _battleSystem.Block;
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public void ReceiveNotify()
+    {
+        if (GameEvent.TutorialComplete && PlayerController.isGround && _battleSystem.CanAtk)
+        {
+            AddCommandToSet();
+        }
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Hurted);
+        CommandReplaceSet.Add(Status.BlockAtk);
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+        _battleSystem.isBlock = true;
+
+        Reset();
+    }
+    public override void End()
+    {
+        _controller.StopAnimation(_ani);
+        _battleSystem.BeginAtkCoolDown();
+        _battleSystem.isBlock = false;
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    private void BlockSuccess()
+    {
+        Timer = TimerSet - 0.49f;
+    }
+    private void Reset()
+    {
+        Timer = TimerSet;
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = TimerSet - 0.05f, Callback = Event1 },
+                new TimedEvent { TriggerTime = TimerSet - 0.5f, Callback = Event2 },
+                new TimedEvent { TriggerTime = 0, Callback = Event3 },
+            }
+        );
+    }
+    private void Event1()
+    {
+        PlayerBlockJudgement block;
+
+        block = GameObject.Instantiate(BlockPrefab, _controller._transform.localPosition, Quaternion.identity)?.GetComponent<PlayerBlockJudgement>();
+        block.BlockSuccess += _battleSystem.BeginBulletTime;
+        block.BlockSuccess += BlockSuccess;
+        switch (PlayerController._player.face)
+        {
+            case Creature.Face.Right:
+                block.isRBlock = true;
+                block.isLBlock = false;
+                break;
+            case Creature.Face.Left:
+                block.isRBlock = false;
+                block.isLBlock = true;
+                block.transform.localScale = new Vector3(-1, 1, 1);
+                break;
+        }
+    }
+    private void Event2()
+    {
+        _ani.ChangeAnimator("End", "true");
+    }
+    private void Event3()
+    {
+        RemoveCommandFromSet();
+    }
+}
+public class PlayerBlockNormalAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
+{
+    private BattleSystem _battleSystem;
+    private PlayerNormalAtkAni _ani;
+    private GameObject NormalAtkPrefab1;
+    private GameObject NormalAtkPrefab2;
+    private float TimerSet;
+    private float Timer;
+    private Queue<TimedEvent> _eventQueue;
+    private bool isUseAlterAtk;
+    public PlayerBlockNormalAtkStatus(PlayerController controller, BattleSystem battle, PlayerNormalAtkAni Ani)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _ani = Ani;
+        Inisialize(Status.BlockAtk, OperateType.FixedUpdate);
+        TimerSet = _battleSystem.AtkTimerSet;
+        Reset();
+        NormalAtkPrefab1 = _battleSystem.NormalAtk;
+        NormalAtkPrefab2 = _battleSystem.AlterAtk;
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public void ReceiveNotify()
+    {
+        if (_battleSystem.isBlockSuccess)
+        {
+            _battleSystem.StopBulletTime();
+            AddCommandToSet();
+        }
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+    }
+    public override void Begin()
+    {
+        isUseAlterAtk = _battleSystem.JudgeUseAlterNormalAtk();
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        if (isUseAlterAtk)
+        {
+            _ani.ChangeAnimator("Alter", "true");
+        }
+    }
+    public override void End()
+    {
+        _controller.StopAnimation(_ani);
+        if (isUseAlterAtk)
+        {
+            _battleSystem.StopCalculateAlterAtk();
+            _ani.ChangeAnimator("Alter", "false");
+        }
+        else
+        {
+            _battleSystem.BeginCalculateAlterAtk();
+        }
+        _battleSystem.BeginAtkCoolDown();
+        Reset();
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    private void Reset()
+    {
+        Timer = TimerSet;
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = TimerSet - 0.067f, Callback = Event1 },
+                new TimedEvent { TriggerTime = 0, Callback = Event2 },
+            }
+        );
+    }
+    private void Event1()
+    {
+        Transform atk;
+        if (!isUseAlterAtk)
+        {
+            atk = GameObject.Instantiate(NormalAtkPrefab1, _controller._transform.position, Quaternion.identity).transform;
+        }
+        else
+        {
+            atk = GameObject.Instantiate(NormalAtkPrefab2, _controller._transform.position, Quaternion.identity).transform;
+        }
+        switch (PlayerController._player.face)
+        {
+            case Creature.Face.Right:
+                atk.localScale = new Vector3(1, 1, 1);
+                break;
+            case Creature.Face.Left:
+                atk.localScale = new Vector3(-1, 1, 1);
+                break;
+        }
     }
     private void Event2()
     {

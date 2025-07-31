@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerUnderJudgement : MonoBehaviour
 {
-    public Transform Player;
+    public PlayerController _controller;
     public float PushSpeed;
     private PlayerTouchJudgement _touchJudgement;
     private bool PushToRight;
@@ -19,15 +19,15 @@ public class PlayerUnderJudgement : MonoBehaviour
     {
         if (PushToRight && !PushToLeft)
         {
-            PlayerController.Rigid2D.velocity = new Vector2(PushSpeed, PlayerController.Rigid2D.velocity.y);
+            _controller.SetVelocity(new Vector2(PushSpeed, _controller.GetYVelocity()));
         }
         if (PushToLeft && !PushToRight)
         {
-            PlayerController.Rigid2D.velocity = new Vector2(-PushSpeed, PlayerController.Rigid2D.velocity.y);
+            _controller.SetVelocity(new Vector2(-PushSpeed, _controller.GetYVelocity()));
         }
         if(PushToRight && PushToLeft)
         {
-            PlayerController.Rigid2D.velocity = new Vector2(PushSpeed, PlayerController.Rigid2D.velocity.y);
+            _controller.SetVelocity(new Vector2(PushSpeed, _controller.GetYVelocity()));
         }
     }
 
@@ -37,7 +37,7 @@ public class PlayerUnderJudgement : MonoBehaviour
         {
             if(this.transform.position.x >= collision.transform.position.x)
             {
-                if (!Player.GetComponent<PlayerController>().touchRightWall)
+                if (!_controller.touchRightWall)
                 {
                     PushToRight = true;
                 }
@@ -49,7 +49,7 @@ public class PlayerUnderJudgement : MonoBehaviour
             }
             else
             {
-                if (!Player.GetComponent<PlayerController>().touchLeftWall)
+                if (!_controller.touchLeftWall)
                 {
                     PushToLeft = true;
                 }
@@ -76,7 +76,6 @@ public class PlayerUnderJudgement : MonoBehaviour
             _touchJudgement.isMonsterUnder = false;
             PushToRight = false;
             PushToLeft = false;
-            PlayerController.Rigid2D.velocity = new Vector2(0, PlayerController.Rigid2D.velocity.y);
         }
         if (collision.GetComponent<CollisionType>() != null)
         {

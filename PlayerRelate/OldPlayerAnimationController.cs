@@ -1165,14 +1165,14 @@ public class OldPlayerAnimationController : MonoBehaviour
             }
         }
 
-        if (BattleSystem.isBlockSuccess)
+        /*if (BattleSystem.isBlockSuccess)
         {
             if (!HasSpecialSEAppear)
             {
                 _playerSE.BlockSuccessSoundPlay();
                 HasSpecialSEAppear = true;
             }
-        }
+        }*/
 
         if (NowAni != LastAni)
         {

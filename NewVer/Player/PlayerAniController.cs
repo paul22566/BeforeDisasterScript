@@ -10,12 +10,15 @@ public class PlayerAniController
     public PlayerJumpAni jumpAni;
     public PlayerShootAni shootAni;
     public PlayerDashAni dashAni;
+    public PlayerHurtedAni hurtedAni;
     public PlayerNormalAtkAni normalAtkAni;
     public PlayerStrongAtkAni strongAtkAni;
     public PlayerThrowItemAni throwItemAni;
     public PlayerWalkThrowAni walkThrowAni;
     public PlayerJumpThrowAni jumpThrowAni;
     public PlayerUseItemAni useItemAni;
+    public PlayerBlockAni blockAni;
+    public PlayerDieAni dieAni; 
 
     public PlayerAniController(Transform _transform, float scale)
     {
@@ -30,6 +33,9 @@ public class PlayerAniController
         walkThrowAni = new PlayerWalkThrowAni(0, _transform, scale, 3);
         jumpThrowAni = new PlayerJumpThrowAni(4, _transform, scale, 4);
         useItemAni = new PlayerUseItemAni(20, _transform, scale, 1);
+        blockAni = new PlayerBlockAni(10, _transform, scale, 1);
+        hurtedAni = new PlayerHurtedAni(17, _transform, scale, 5);
+        dieAni = new PlayerDieAni(18, _transform, scale, 1);
     }
 }
 
@@ -37,22 +43,14 @@ public class PlayerWaitAni : AnimationController
 {
     public PlayerWaitAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 }
 public class PlayerRunAni : AnimationController
 {
     public PlayerRunAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 
     public override void AniPlay()
@@ -66,8 +64,15 @@ public class PlayerDashAni : AnimationController
     private SpriteRenderer sprite;
     public PlayerDashAni(int order, Transform objectTransform, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        sprite = _aniObject.GetComponent<SpriteRenderer>();
+        if (order < objectTransform.childCount)
+        {
+            _aniObject = objectTransform.GetChild(order).gameObject;
+            sprite = _aniObject?.GetComponent<SpriteRenderer>();
+        }
+        else
+        {
+            Debug.LogWarning("AniTransformOutRange");
+        }
 
         PlayPriority = priority;
     }
@@ -89,44 +94,28 @@ public class PlayerNormalAtkAni : AnimationController
 {
     public PlayerNormalAtkAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 }
 public class PlayerStrongAtkAni : AnimationController
 {
     public PlayerStrongAtkAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 }
 public class PlayerJumpAni : AnimationController
 {
     public PlayerJumpAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 }
 public class PlayerShootAni : AnimationController
 {
     public PlayerShootAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 }
 public class PlayerThrowItemAni : AnimationController
@@ -135,11 +124,7 @@ public class PlayerThrowItemAni : AnimationController
     private GameObject ExplosionBottleImage;
     public PlayerThrowItemAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
     public void PlayThrowItemAni(ItemManage.UsefulItem item)
     {
@@ -174,11 +159,7 @@ public class PlayerWalkThrowAni : AnimationController
     private GameObject ExplosionBottleImage;
     public PlayerWalkThrowAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 
     public override void AniPlay()
@@ -225,11 +206,7 @@ public class PlayerJumpThrowAni : AnimationController
     private GameObject ExplosionBottleImage;
     public PlayerJumpThrowAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 
     public override void AniPlay()
@@ -275,11 +252,7 @@ public class PlayerUseItemAni : AnimationController
     private Transform RitualParticle;
     public PlayerUseItemAni(int order, Transform objectTransform, float aniScale, int priority)
     {
-        _aniObject = objectTransform.GetChild(order).gameObject;
-        _aniTransform = _aniObject.transform.GetChild(0);
-        _animator = _aniTransform.GetComponent<Animator>();
-        _aniScale = aniScale;
-        PlayPriority = priority;
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 
     public override void AniTurnFace(Creature.Face face)
@@ -298,6 +271,27 @@ public class PlayerUseItemAni : AnimationController
     public void AssignParticle(Transform ritual)
     {
         RitualParticle= ritual;
+    }
+}
+public class PlayerBlockAni : AnimationController
+{
+    public PlayerBlockAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
+public class PlayerHurtedAni : AnimationController
+{
+    public PlayerHurtedAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
+public class PlayerDieAni : AnimationController
+{
+    public PlayerDieAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
     }
 }
 

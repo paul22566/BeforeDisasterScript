@@ -80,13 +80,13 @@ public class BattleSystem : MonoBehaviour
     private float BigGunTimerSet = 2.35f;
     private float ImpulseJumpTimer;
     private float ImpulseJumpTimerSet = 0.5f;
-    private float BlockTimerSet = 1.25f;
+    [HideInInspector] public float BlockTimerSet = 1.25f;
     private float BlockTimer;
-    private float BlockPrepareAtkTimerSet = 1.55f;
+    private float BlockPrepareAtkTimerSet = 0.5f;
     private float BlockPrepareAtkTimer;
-    private float BlockAtkTimerSet = 1.9f;
+    [HideInInspector] public float BlockAtkTimerSet = 1.9f;
     private float BlockAtkTimer;
-    private float BeBlockTimerSet = 2.3f;
+    [HideInInspector] public float BeBlockTimerSet = 2.3f;
     private float BeBlockTimer;
     private float WeakTimerSet = 2.3f;
     private float WeakTimer;
@@ -98,7 +98,7 @@ public class BattleSystem : MonoBehaviour
 
     public static bool isBlockSuccessWait;//格檔成功後等待指令期  有被其他script用到(playerblockjudgement)
     public static bool isBeBlockSuccess;//有被其他script用到(playerblockjudgement，AtkController)
-    public static bool isBlockSuccess;//格檔成功開關  有被其他script用到(playerBlockJudgement，normalmonsterAtk)
+    [HideInInspector] public bool isBlockSuccess;//格檔成功開關  有被其他script用到(playerBlockJudgement，normalmonsterAtk)
     [HideInInspector] public bool isAtk;//是不是在攻擊中 有被其他script用到(PlayerController)
     [HideInInspector] public bool isCAtk;//是不是在c攻擊中 有被其他script用到(PlayerController)
     [HideInInspector] public bool isCriticAtk;//是不是在大招 有被其他script用到(playerController)
@@ -172,14 +172,10 @@ public class BattleSystem : MonoBehaviour
     public GameObject RCriticAtk;
     public GameObject LCriticAtk;
     public GameObject JumpCAtk;
-    public GameObject RBlock;
-    public GameObject LBlock;
-    public GameObject RBlockNormalAtkAni;
-    public GameObject LBlockNormalAtkAni;
-    public GameObject RBlockNormalAtk;
-    public GameObject LBlockNormalAtk;
-    public GameObject RBlockStrongAtk;
-    public GameObject LBlockStrongAtk;
+    public GameObject Block;
+    public GameObject BlockNormalAtkAni;
+    public GameObject BlockNormalAtk;
+    public GameObject BlockStrongAtk;
     public GameObject RBigGun;
     public GameObject LBigGun;
     public GameObject RCocktailCriticAtk;
@@ -187,8 +183,7 @@ public class BattleSystem : MonoBehaviour
     public GameObject ImpulseJumpExplosion;
     //各類型攻擊應該出現地點
     [HideInInspector] public Vector3 BulletAppear = new Vector3(1.237f, 0.533f, 0);
-    Vector3 RBulletJumpAppear = new Vector3(1.441f, 0.516f, 0);
-    Vector3 LBulletJumpAppear = new Vector3(-1.441f, 0.516f, 0);
+    [HideInInspector] public Vector3 BulletJumpAppear = new Vector3(1.441f, 0.516f, 0);
     [HideInInspector] public Vector3 ThrowItemAppear = new Vector3(0.8f, 1.21f, 0);
     [HideInInspector] public Vector3 WalkThrowItemAppear = new Vector3(0.3f, 1.07f, 0);
     [HideInInspector] public Vector3 JumpThrowItemAppear = new Vector3(0.859f, 0.332f, 0);
@@ -268,6 +263,15 @@ public class BattleSystem : MonoBehaviour
         if ((ShootLastTime + ShootCoolDown) <= _time)
         {
             CanShoot = true;
+        }
+
+        if (isBlockSuccess)
+        {
+            BlockPrepareAtkTimer -= _UnScaleDeltaTime;
+            if (BlockPrepareAtkTimer <= 0)
+            {
+                StopBulletTime();
+            }
         }
 
         CalculateAlterNormalAtk();
@@ -360,7 +364,6 @@ public class BattleSystem : MonoBehaviour
                     if (!PlayerController.isGround && !isJumpThrow && CanAtk && !_playerController.CantDoAnyThing)
                     {
                         _playerController.CantDoAnyThing = true;
-                        _playerController.OnlyCanMove = true;
                         isAtk = true;
                         TimerSwitch = true;
                         AtkLastTime = _time;
@@ -400,7 +403,6 @@ public class BattleSystem : MonoBehaviour
                 if (!PlayerController.isGround && !isJumpThrow && CanAtk && !_playerController.CantDoAnyThing)
                 {
                     _playerController.CantDoAnyThing = true;
-                    _playerController.OnlyCanMove = true;
                     isAtk = true;
                     TimerSwitch = true;
                     AtkLastTime = _time;
@@ -646,6 +648,7 @@ public class BattleSystem : MonoBehaviour
         ShootLastTime = _time;
     }
 
+
     /*public void ShootSystem()
     {
         if (!_playerController.CantDoAnyThing)
@@ -726,7 +729,6 @@ public class BattleSystem : MonoBehaviour
             }
         }
     }*/
-
     public void ShootAccumulateEnd()
     {
         if (!isAllowBigGun && SkillPower >= 30 && isBigGunProcess)
@@ -781,7 +783,6 @@ public class BattleSystem : MonoBehaviour
             ShootAccumulateTimer = ShootAccumulateTimerSet;
         }
     }
-
     private void BigGunTimerMethod()
     {
         if (BigGunTimerSwitch)
@@ -821,6 +822,21 @@ public class BattleSystem : MonoBehaviour
         }
     }
 
+    public void BeginBulletTime()
+    {
+        isBlockSuccess = true;
+        BackgroundSystem.CantPause = true;
+        BackgroundSystem.GameSpeed = 0;
+        isBlockActualAppear = false;
+
+        BlockPrepareAtkTimer = BlockPrepareAtkTimerSet;
+    }
+    public void StopBulletTime()
+    {
+        BackgroundSystem.GameSpeed = 1;
+        BackgroundSystem.CantPause = true;
+        isBlockSuccess = false;
+    }
     private void BlockTimerMethod()
     {
         if (BlockTimerSwitch)
@@ -850,10 +866,10 @@ public class BattleSystem : MonoBehaviour
                     switch (PlayerController._player.face)
                     {
                         case Face.Left:
-                            Instantiate(LBlock, this.transform.position, Quaternion.identity);
+                            //Instantiate(LBlock, this.transform.position, Quaternion.identity);
                             break;
                         case Face.Right:
-                            Instantiate(RBlock, this.transform.position, Quaternion.identity);
+                            //Instantiate(RBlock, this.transform.position, Quaternion.identity);
                             break;
                     }
                     FirstTrigger = true;
@@ -878,7 +894,6 @@ public class BattleSystem : MonoBehaviour
             BlockTimer = BlockTimerSet;
         }
     }
-
     private void BlockAtkTimerMethod()
     {
         if (BlockAtkSwitch)
@@ -891,10 +906,10 @@ public class BattleSystem : MonoBehaviour
                     switch (PlayerController._player.face)
                     {
                         case Face.Left:
-                            Instantiate(LBlockNormalAtkAni, this.transform.position, Quaternion.identity);
+                            //Instantiate(LBlockNormalAtkAni, this.transform.position, Quaternion.identity);
                             break;
                         case Face.Right:
-                            Instantiate(RBlockNormalAtkAni, this.transform.position, Quaternion.identity);
+                            //Instantiate(RBlockNormalAtkAni, this.transform.position, Quaternion.identity);
                             break;
                     }
                     FirstTrigger = true;
@@ -906,10 +921,10 @@ public class BattleSystem : MonoBehaviour
                         switch (PlayerController._player.face)
                         {
                             case Face.Left:
-                                Instantiate(LBlockNormalAtk, this.transform.position, Quaternion.identity);
+                               // Instantiate(LBlockNormalAtk, this.transform.position, Quaternion.identity);
                                 break;
                             case Face.Right:
-                                Instantiate(RBlockNormalAtk, this.transform.position, Quaternion.identity);
+                                //Instantiate(RBlockNormalAtk, this.transform.position, Quaternion.identity);
                                 break;
                         }
                         SecondTrigger = true;
@@ -936,10 +951,10 @@ public class BattleSystem : MonoBehaviour
                         switch (PlayerController._player.face)
                         {
                             case Face.Left:
-                                Instantiate(LBlockStrongAtk, this.transform.position, Quaternion.identity);
+                                //Instantiate(LBlockStrongAtk, this.transform.position, Quaternion.identity);
                                 break;
                             case Face.Right:
-                                Instantiate(RBlockStrongAtk, this.transform.position, Quaternion.identity);
+                                //Instantiate(RBlockStrongAtk, this.transform.position, Quaternion.identity);
                                 break;
                         }
                         FirstTrigger = true;
@@ -993,7 +1008,6 @@ public class BattleSystem : MonoBehaviour
             _playerController.CantDoAnyThing = true;
         }
     }
-
     public void BlockSuccessTimerMethod()
     {
         if (isBlockSuccess)
@@ -1037,7 +1051,6 @@ public class BattleSystem : MonoBehaviour
             BlockPrepareAtkTimer = BlockPrepareAtkTimerSet;
         }
     }
-
     private void BlockAtk(int Ver)
     {
         switch (Ver)
@@ -1054,14 +1067,12 @@ public class BattleSystem : MonoBehaviour
                 break;
         }
     }
-
     private void BlockAtkBegin()
     {
         isBlockSuccess = false;
         isBlockSuccessWait = false;
         BlockAtkSwitch = true;
     }
-
     private void BeBlockTimerMethod()
     {
         if (isBeBlockSuccess)
@@ -1124,7 +1135,6 @@ public class BattleSystem : MonoBehaviour
             BeBlockTimer = BeBlockTimerSet;
         }
     }
-
     private void WeakTimerMethod()
     {
         if(WeakTimerSwitch)

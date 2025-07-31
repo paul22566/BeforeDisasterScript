@@ -16,13 +16,13 @@ public class CommonHurtedJudjement : MonoBehaviour
     {
         if (collision.tag == "monsterAtk" || collision.tag == "Cocktail" || collision.tag == "ExplosionBottle")
         {
-            _playerController.RecordMonsterAtkData(collision.transform.GetComponent<NormalMonsterAtk>(), collision.transform);
+            _playerController.GetHurted(collision.transform?.GetComponent<NormalMonsterAtk>(), collision.transform);
         }
-        if (collision.tag == "CaptureAtk" && !_playerController.WeakInvincible)
+        if (collision.tag == "CaptureAtk" && !_playerController._invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Weak))
         {
-            _playerController.HurtedByCaptureAtk(collision.GetComponent<CaptureAtk>());
+            _playerController.HurtedByCaptureAtk(collision?.GetComponent<CaptureAtk>());
         }
-        if (collision.tag == "CaptureAtkEnd" && !_playerController.WeakInvincible)
+        if (collision.tag == "CaptureAtkEnd" && !_playerController._invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Weak))
         {
             _playerController.HurtedByCaptureAtkEnd();
         }

@@ -70,11 +70,8 @@ public class MoveAtk : MonoBehaviour
                 {
                     if (_playerController.Hp > 0)
                     {
-                        _playerTransform.position = PlayerController.PlayerFinalStandPlace;
-                        PlayerController.Rigid2D.gravityScale = 7;
                         isTranslate = true;
-                        _playerController.HurtingByMoveAtk = false;
-                        _playerController.CantDoAnyThing = false;
+                        _playerController.MoveTrapComplete();
                     }
                 }
                 if (TranslateTimer <= 0)

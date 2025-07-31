@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,9 +7,10 @@ public class PlayerBlockJudgement : MonoBehaviour
 {
     private float BlockTimer;
     private float BlockTimerSet = 0.2f;
-    public bool isRBlock;
-    public bool isLBlock;
+    [HideInInspector] public bool isRBlock;
+    [HideInInspector] public bool isLBlock;
     private BattleSystem _battleSystem;
+    public Action BlockSuccess;
 
     private void Awake()
     {
@@ -45,11 +47,7 @@ public class PlayerBlockJudgement : MonoBehaviour
                 {
                     if (collision.GetComponent<NormalMonsterAtk>().CanBeBlock)
                     {
-                        BattleSystem.isBlockSuccess = true;
-                        BattleSystem.isBlockSuccessWait = true;
-                        BackgroundSystem.CantPause = true;
-                        BackgroundSystem.GameSpeed = 0;
-                        _battleSystem.isBlockActualAppear = false;
+                        BlockSuccess?.Invoke();
                         Destroy(this.gameObject);
                     }
                 }
@@ -60,11 +58,7 @@ public class PlayerBlockJudgement : MonoBehaviour
                 {
                     if (collision.GetComponent<NormalMonsterAtk>().CanBeBlock)
                     {
-                        BattleSystem.isBlockSuccess = true;
-                        BattleSystem.isBlockSuccessWait = true;
-                        BackgroundSystem.CantPause = true;
-                        BackgroundSystem.GameSpeed = 0;
-                        _battleSystem.isBlockActualAppear = false;
+                        BlockSuccess?.Invoke();
                         Destroy(this.gameObject);
                     }
                 }
