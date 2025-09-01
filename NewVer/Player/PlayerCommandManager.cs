@@ -16,6 +16,7 @@ public class PlayerCommandManager
         _commands[(Command.LeftMove, CommandType.Up)] = new PlayerCommand();
         _commands[(Command.RightMove, CommandType.Pressing)] = new PlayerCommand();
         _commands[(Command.RightMove, CommandType.Up)] = new PlayerCommand();
+        _commands[(Command.NormalAtk, CommandType.Pressed)] = new PlayerCommand();
         _commands[(Command.NormalAtk, CommandType.Pressing)] = new PlayerCommand();
         _commands[(Command.NormalAtk, CommandType.Up)] = new PlayerCommand();
         _commands[(Command.StrongAtk, CommandType.Pressed)] = new PlayerCommand();

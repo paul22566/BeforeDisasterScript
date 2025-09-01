@@ -217,7 +217,7 @@ public class MonsterBlockController : MonoBehaviour
             }
             if (BlockSuccessTimer <= (BlockSuccessTimerSet - 0.5))
             {
-                BackgroundSystem.CantPause = true;
+                BackgroundSystem.CantPause = false;
                 BackgroundSystem.GameSpeed = 1;
                 if (BlockSuccessTimer <= (BlockSuccessTimerSet - BlockAtkAppearTime))
                 {

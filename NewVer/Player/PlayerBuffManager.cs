@@ -7,11 +7,13 @@ public class PlayerBuffManager
     public AtkPowerBuff atkPowerBuff;
     public InhibitBuff inhibitBuff;
     public StrongInvincibleBuff strongInvincibleBuff;
+    public BlockAtkInvincibleBuff blockAtkInvincibleBuff;
     public PlayerBuffManager(PlayerController controller, BattleSystem battleSystem)
     {
         atkPowerBuff = new AtkPowerBuff(controller, battleSystem);
         inhibitBuff = new InhibitBuff(controller, battleSystem);
         strongInvincibleBuff = new StrongInvincibleBuff(controller, controller._invincibleManager);
+        blockAtkInvincibleBuff = new BlockAtkInvincibleBuff(controller, controller._invincibleManager);
     }
 }
 public abstract class Buff
@@ -220,5 +222,45 @@ public class StrongInvincibleBuff : Buff
 
         _invincibleManager?.RemoveInvincible(InvincibleManager.InvincibleType.Strong);
         _controller.NowPlayingAni?.ChangeAniColor(new Color(1, 1, 1, 1));
+    }
+}
+public class BlockAtkInvincibleBuff : Buff
+{
+    private InvincibleManager _invincibleManager;
+
+    public BlockAtkInvincibleBuff(PlayerController controller, InvincibleManager invincible)
+    {
+        _controller = controller;
+        _invincibleManager = invincible;
+        TimerSet = _controller.BlockAtkInvicibleTimerSet;
+
+        if (_controller != null && _invincibleManager != null)
+        {
+            isInitializeCorrect = true;
+        }
+        else
+        {
+            Debug.LogWarning("InisialBuffWrong");
+        }
+    }
+
+    public override void Begin()
+    {
+        if (!isInitializeCorrect)
+        {
+            return;
+        }
+
+        Timer = TimerSet;
+        _invincibleManager?.AddInvincible(InvincibleManager.InvincibleType.Absolute);
+    }
+    public override void End()
+    {
+        if (!isInitializeCorrect)
+        {
+            return;
+        }
+
+        _invincibleManager?.RemoveInvincible(InvincibleManager.InvincibleType.Absolute);
     }
 }

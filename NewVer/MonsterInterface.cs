@@ -10,39 +10,38 @@ public interface IMonsterFactory
 
 public interface IMonsterStatus
 {
-    void action(Monster monster);
-    bool leaveJudge(Monster monster);
+    void Execute(Monster monster, float deltaTime);
+    void FixedExecute(Monster monster, float deltaTime);
     void Begin(Monster monster);
     void End(Monster monster);
+
+    IMonsterStatus CheckTransition();
 }
 public interface IMonsterParameter
 {
     void CalculateParameter();
 }
 
-public interface IStrategyUser<TStrategy>
-{
-    public void SetStrategy(TStrategy strategy);
-    public void SetAni(AnimationController ani);
-}
 public interface IOnceStrategyUser
 {
-    public void StrategyEnd();//該策略結束時的動作
+    public void AddDefaultNextStatus(IMonsterStatus status);
+    public bool DetectStrategyEnd();
 }
-
-public interface IStrategyReset
+public interface IOnceStrategy
 {
-    public void StrategyReset();
+    public bool ExecuteComplete();
 }
 public interface IMonsterAtkStrategy
 {
-    void Atk(Action endNotice);
+    void FixedExecute(float deltaTime);
 }
 public interface IMonsterPatrolStrategy
 {
-    void Patrol();
+    void Execute(float deltaTime);
+    void FixedExecute(float deltaTime);
 }
 public interface IMonsterCooldownStrategy
 {
-    void CooldownAction(Monster monster, Action endAction);
+    void Execute(Monster monster, float deltaTime);
+    void FixedExecute(Monster monster, float deltaTime);
 }

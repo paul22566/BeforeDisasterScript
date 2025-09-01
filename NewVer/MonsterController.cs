@@ -17,12 +17,12 @@ public class MonsterController : MonoBehaviour, IHurtedObject
     // Update is called once per frame
     void Update()
     {
-        _monster.UpdateLogic();
+        _monster.UpdateLogic(Time.deltaTime);
     }
 
     private void FixedUpdate()
     {
-        _monster.DoAction();
+        _monster.FixedUpdateLogic(Time.fixedDeltaTime);
     }
 
     public void HurtedControll(int damage)

@@ -28,6 +28,7 @@ public class NewKeyCodeManager
     [HideInInspector] public bool RightMoveUp;
     [HideInInspector] public bool JumpPressed;
     [HideInInspector] public bool JumpUp;
+    [HideInInspector] public bool NormalAtkPressed;
     [HideInInspector] public bool NormalAtkPressing;
     [HideInInspector] public bool NormalAtkUp;
     [HideInInspector] public bool StrongAtkPressed;
@@ -933,6 +934,10 @@ public class NewKeyCodeManager
             JumpUp = true;
         }
 
+        if (XboxKeyCodes[Command.NormalAtk] == Pressed || XboxKeyCodes[Command.NormalAtk] == PressedB)
+        {
+            NormalAtkPressed = true;
+        }
         if (XboxKeyCodes[Command.NormalAtk] == Pressing || XboxKeyCodes[Command.NormalAtk] == PressingB)
         {
             NormalAtkPressing = true;

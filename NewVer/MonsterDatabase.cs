@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -56,9 +57,13 @@ public struct SwordManData
     public float StringAtkDistance;
     public float StringAtkSpeed;
     public float StringAtkTime;
+
+    public TransitionCondition NormalAtkCondition;
+    public TransitionCondition StringAtkCondition;
     public SwordManData(GameObject atk1_1, GameObject atk1_2, GameObject stringAtk,
         float patrolT, float speed, float chasing, float atkD, 
-        float atkS, float atkTime, float SAtkS, float sAtkD, float stringAtkTime)
+        float atkS, float atkTime, float SAtkS, float sAtkD, float stringAtkTime,
+        TransitionCondition normalAtkCon, TransitionCondition stringAtkCon)
     {
         Atk1_1 = atk1_1;
         Atk1_2 = atk1_2;
@@ -73,6 +78,9 @@ public struct SwordManData
         StringAtkDistance = sAtkD;
         StringAtkSpeed = SAtkS;
         StringAtkTime = stringAtkTime;
+
+        NormalAtkCondition = normalAtkCon;
+        StringAtkCondition = stringAtkCon;
     }
 }
 

@@ -84,6 +84,16 @@ public class XboxCommandReceiver : IInputSource
         }
         return result;
     }
+    public bool IsNormalAttackPressed(NewKeyCodeManager manager)
+    {
+        bool result = false;
+        if (manager.NormalAtkPressed)
+        {
+            manager.NormalAtkPressed = false;
+            result = true;
+        }
+        return result;
+    }
     public bool IsNormalAttackPressing(NewKeyCodeManager manager)
     {
         bool result = false;
