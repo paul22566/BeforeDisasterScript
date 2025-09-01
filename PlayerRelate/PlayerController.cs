@@ -40,6 +40,7 @@ public class PlayerController : MonoBehaviour
     public PlayerTouchJudgement _playerTouchJudgement;
     public SlopeControll _slopeControll;
     public ItemManage _itemManage;
+    public AniMethod _aniMethod;
     private GameObject CommonCollider;
     public Image HpUI;
     public Image SkillPowerUI;//有被其他script用到(PlayerSpecialAni)
@@ -53,11 +54,10 @@ public class PlayerController : MonoBehaviour
     public float BlockAtkInvicibleTimerSet;
     public float HurtedTimerSet;
     public float DieTimerSet;//有被其他script用到(BackGroundSystem)
-    [HideInInspector] public float DieTimer;//有被其他script用到(BackGroundSystem)
-    private float RestoreTimer;
     public float RestoreTimerSet;
     private float LongFallTimerSet = 1.1f;
     private float LongFallWaitTimerSet = 1;
+    [HideInInspector] public int RestoreHP = 4;
     [HideInInspector] public int JumpCount;
     private RaycastHit2D GroundCheck;
     private RaycastHit2D SpecialGroundCheck;
@@ -78,7 +78,6 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public bool isUpArrowPressed;//其他script有用到(BackgroundSystem)
     public static bool isDie;//有被其他script用到(fadeoutnormal，AimpowerController，predictPowerBase，BackGroundSystem，checkPoint，MonsterBurnController)
     public static bool CanInteract;//有被其他script用到(interactableObject)
-    [HideInInspector] public bool isRestore;//有被其他script用到(battleSystem)
     [HideInInspector] public bool isImpulse;//進入地圖時的推力  有被其他script用到(backgroundsystem，keycodeManage)
     [HideInInspector] public bool isDash;//是不是dash中，有被其他script用到(dogAtk，BattleSystem，ghostController)
     [HideInInspector] public bool isSaveGame = false;//有被其他script用到(CheckPoint，RestPlace)
@@ -96,16 +95,11 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public bool TouchGrassGround;
     [HideInInspector] public bool TouchMetalGround;
     [HideInInspector] public bool CanDash;
-    private bool RestoreTimerSwitch;
-    private bool isDieUIAppear;
     private bool DieByCapture;
-    private bool RestoreUsed;
 
     //戰鬥相關開關
     public static bool isHurted;//有被其他script用到(initializeColor，battleSystem，playerBlockJudgement，AimpowerController，predictPowerBase，itemWindow，itemButton，DocumentDetail)
     public InvincibleManager _invincibleManager;
-    [HideInInspector] public bool HurtedInvincible;//被怪物攻擊無敵時間
-    [HideInInspector] public bool isBlockAtkInvincible;//script(battleSystem)
 
     [Header("閃避參數")]
     public float DashTime;
@@ -125,11 +119,16 @@ public class PlayerController : MonoBehaviour
     private PlayerRightMoveStatus _rightMoveStatus;
     private PlayerLeftMoveStatus _leftMoveStatus;
     private PlayerDashStatus _dashStatus;
+    private PlayerJumpStatus _jumpStatus;
+    private PlayerHurtedStatus _hurtedStatus;
+    private PlayerDieStatus _dieStatus;
+    private PlayerRestoreStatus _restoreStatus;
+
     private PlayerAcumulateStatus _accumulateStatus;
     private PlayerNormalAtkStatus _normalAtkStatus;
     private PlayerStrongAtkStatus _strongAtkStatus;
+    private PlayerCriticAtkStatus _criticAtkStatus;
     private PlayerJumpAtkStatus _jumpAtkStatus;
-    private PlayerJumpStatus _jumpStatus;
     private PlayerLeftWalkThrowStatus _leftWalkThrow;
     private PlayerRightWalkThrowStatus _rightWalkThrow;
     private PlayerJumpThrowStatus _jumpThrowStatus;
@@ -137,8 +136,12 @@ public class PlayerController : MonoBehaviour
     private PlayerUseThrowItemStatus _throwItemStatus;
     private PlayerShootStatus _shootStatus;
     private PlayerBlockStatus _blockStatus;
-    private PlayerHurtedStatus _hurtedStatus;
-    private PlayerDieStatus _dieStatus;
+    private PlayerBlockNormalAtkStatus _blockNormalAtkStatus;
+    private PlayerBlockStrongAtkStatus _blockStrongAtkStatus;
+    public PlayerBeBlockStatus _beBlockStatus;
+    public PlayerWeakStatus _weakStatus;
+
+    private PlayerCocktailCriticAtkStatus _cocktailStatus;
 
     private PlayerUseItemStart _useItemStart;
     private PlayerAimStop _aimStop;
@@ -181,7 +184,6 @@ public class PlayerController : MonoBehaviour
         _playerSE = _transform.GetChild(3).GetComponent<PlayerSE>();
         CommonCollider = _transform.GetChild(4).gameObject;
 
-        DieTimer = DieTimerSet;
         if (GameEvent.AbsorbBoss2)
         {
             SkillPowerUI = SkillPowerUI2;
@@ -264,15 +266,10 @@ public class PlayerController : MonoBehaviour
             isCeiling = false;
         }
 
-        //重力控制
-        AutoGravityJudge();
-
         if (isGround && isImpulse)
         {
             isImpulse = false;
         }
-
-        UIControll();
         
         //常態判定框控制
         if (_invincibleManager.GetInvincible(InvincibleManager.InvincibleType.Strong))
@@ -284,16 +281,17 @@ public class PlayerController : MonoBehaviour
             CommonCollider.SetActive(true);
         }
 
-        JudgeMoveDirection();
-        PlayAnimation();
-
         if (_time >= (LastDashTime + DashCoolDown))
         {
             CanDash = true;
         }
 
-        //跳躍判斷
+        AutoGravityJudge();
+        UIControll();
+        JudgeMoveDirection();
+        PlayAnimation();
         JumpCountJudge();
+        
         //重置
         if (Portal.isPortal || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace)
         {
@@ -303,10 +301,6 @@ public class PlayerController : MonoBehaviour
                 _battleSystem.isAccumulate = false;
                 _battleSystem.AccumulateTimerSwitch = false;
                 _battleSystem.isAccumulateComplete = false;
-                //回復
-                RestoreUsed = false;
-                isRestore = false;
-                RestoreTimerSwitch = false;
                 //雜項
                 _boxCollider.isTrigger = false;
                 CantDoAnyThing = false;
@@ -397,15 +391,13 @@ public class PlayerController : MonoBehaviour
         _fixedDeltaTime = Time.fixedDeltaTime;
 
         FixedOperateCommand(FixedUpdateOperateCommands, _fixedDeltaTime);
-
-        RestoreTimerMethod();
     }
 
     private void JudgeMoveDirection()
     {
         bool ShouldReset = false;
 
-        if (isJump)
+        if (FindCommandExist(_jumpStatus))
         {
             ShouldReset = true;
         }
@@ -428,7 +420,7 @@ public class PlayerController : MonoBehaviour
         }
 
         //Dash特殊狀況重置
-        if (isDash)
+        if (FindCommandExist(_dashStatus))
         {
             switch (_player.face)
             {
@@ -526,7 +518,14 @@ public class PlayerController : MonoBehaviour
     }
     private void Move(float speed, float deltaTime)
     {
-        if(speed > 0 && !RightMoveJudge())
+        //MoveDirectionX沒有方向
+        //MoveDirectionY有方向
+        //SpeedX有方向
+        //SpeedY沒方向
+        float SpeedX = speed;
+        float SpeedY = Mathf.Abs(speed);
+
+        if (speed > 0 && !RightMoveJudge())
         {
             return;
         }
@@ -534,8 +533,8 @@ public class PlayerController : MonoBehaviour
         {
             return;
         }
-
-        _transform.position = new Vector3(speed * MoveDirection.x * deltaTime + _transform.position.x, speed * MoveDirection.y * deltaTime + _transform.position.y, 0);
+        
+        _transform.position = new Vector3(SpeedX * MoveDirection.x * deltaTime + _transform.position.x, SpeedY * MoveDirection.y * deltaTime + _transform.position.y, 0);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -551,46 +550,10 @@ public class PlayerController : MonoBehaviour
     }
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (collision.gameObject.tag == "Portal" && !_battleSystem.isCriticAtk && !GameEvent.isAniPlay && !Portal.isPortal)
+        if (collision.gameObject.tag == "Portal" && !FindCommandExist(_criticAtkStatus) && !GameEvent.isAniPlay && !Portal.isPortal)
         {
             collision.gameObject.GetComponent<Portal>().BeginChangeScene();
             IgnoreGravity(true);
-        }
-    }
-
-    void RestoreTimerMethod()
-    {
-        if (RestoreTimerSwitch)
-        {
-            RestoreTimer -= Time.fixedDeltaTime;
-            if (isHurted || isDash || GameEvent.isAniPlay)
-            {
-                RestoreUsed = false;
-                isRestore = false;
-                RestoreTimerSwitch = false;
-                return;
-            }           
-
-            if (RestoreTimer <= (RestoreTimerSet - 0.5))
-            {
-                if (!RestoreUsed)
-                {
-                    _itemManage.RestoreItemNumber -= 1;
-                    RestoreUsed = true;
-                }
-                Hp += 4;
-                if (RestoreTimer <= 0)
-                {
-                    RestoreUsed = false;
-                    RestoreTimerSwitch = false;
-                    isRestore = false;
-                    CantDoAnyThing = false;
-                }
-            }
-        }
-        else
-        {
-            RestoreTimer = RestoreTimerSet;
         }
     }
 
@@ -682,6 +645,33 @@ public class PlayerController : MonoBehaviour
         if (Hp > MaxHp)
         {
             Hp = MaxHp;
+        }
+    }
+    private void UIControll()
+    {
+        //血量
+        HpUI.transform.localScale = new Vector3((float)Hp / (float)MaxHp, HpUI.transform.localScale.y, HpUI.transform.localScale.z);
+        //精力條
+        SkillPowerUI.transform.localScale = new Vector3((float)_battleSystem.SkillPower / (float)_battleSystem.TrueMaxSkillPower, SkillPowerUI.transform.localScale.y, SkillPowerUI.transform.localScale.z);
+        //殺戮值
+        //KillerPointUI.transform.localScale = new Vector3((float)BattleSystem.KillerPoint / (float)_battleSystem.MaxKillerPoint, KillerPointUI.transform.localScale.y, KillerPointUI.transform.localScale.z);
+        //DefendBuff
+        if (_battleSystem.isDefendBuff)
+        {
+            DefendBuffUI.SetActive(true);
+        }
+        else
+        {
+            DefendBuffUI.SetActive(false);
+        }
+        //PowerSeal
+        if (_battleSystem.isPowerSeal)
+        {
+            PowerSealUI.SetActive(true);
+        }
+        else
+        {
+            PowerSealUI.SetActive(false);
         }
     }
     private void OperateCommand(HashSet<PlayerStatus> Set, float deltaTime)
@@ -792,6 +782,19 @@ public class PlayerController : MonoBehaviour
 
         return true;
     }
+    public bool FindCommandExist(PlayerStatus Target)
+    {
+        if (UpdateOperateCommands.Contains(Target))
+        {
+            return true;
+        }
+        if (FixedUpdateOperateCommands.Contains(Target))
+        {
+            return true;
+        }
+
+        return false;
+    }
     public void AddDefaultMode()
     {
         if (isGround)
@@ -806,7 +809,7 @@ public class PlayerController : MonoBehaviour
 
     private void JumpCountJudge()
     {
-        if (isGround && !UpdateOperateCommands.Contains(_jumpStatus))
+        if (isGround && !FindCommandExist(_jumpStatus))
         {
             JumpCount = 2;
         }
@@ -828,20 +831,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Restore()
-    {
-        if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace) return;
-
-        if (!CantDoAnyThing && isGround)
-        {
-            if (_itemManage.RestoreItemNumber > 0)
-            {
-                isRestore = true;
-                CantDoAnyThing = true;
-                RestoreTimerSwitch = true;
-            }
-        }
-    }
     private void OpenItemWindow()
     {
         if (Portal.isPortal || isDie || PauseMenuController.OpenAnyMenu || GameEvent.isAniPlay || isImpulse || _battleSystem.isCaptured || RestPlace.isOpenRestPlace) return;
@@ -954,7 +943,6 @@ public class PlayerController : MonoBehaviour
         _battleSystem.isWeak = true;
         _battleSystem.WeakTimerSwitch = true;
         _boxCollider.isTrigger = false;
-        HurtedInvincible = true;
     }
 
     public void GetHurted(NormalMonsterAtk _atk, Transform AtkTransform)
@@ -995,26 +983,27 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        //格檔減傷計算
+        //格檔成功判定
         if (_battleSystem.isBlockActualAppear && data.MonsterCanBeBlockRecord)
         {
             switch (_player.face)
             {
                 case Face.Left:
-                    if (data.MonsterAtkPlaceRecord.x >= _transform.position.x)
+                    if (data.MonsterAtkPlaceRecord.x < _transform.position.x)
                     {
-                        data.MonsterDamageRecord = data.MonsterDamageRecord / 2;
+                        return;
                     }
                     break;
                 case Face.Right:
-                    if (data.MonsterAtkPlaceRecord.x <= _transform.position.x)
+                    if (data.MonsterAtkPlaceRecord.x > _transform.position.x)
                     {
-                        data.MonsterDamageRecord = data.MonsterDamageRecord / 2;
+                        return;
                     }
                     break;
             }
         }
-        else if (_battleSystem.isBlock)
+        //格檔失敗減傷計算
+        if (_battleSystem.isBlock)
         {
             data.MonsterDamageRecord = data.MonsterDamageRecord / 2;
         }
@@ -1029,7 +1018,6 @@ public class PlayerController : MonoBehaviour
     private void HurtedControll(MonsterAtkData data)
     {
         Hp -= data.MonsterDamageRecord;
-        HurtedInvincible = true;
         _hurtedStatus.AddCommandToSet();
         _buffManager.strongInvincibleBuff.AddBuffToSet();
         _playerSE.HurtedSoundPlay(data.MonsterAtkTypeRecord);
@@ -1040,34 +1028,6 @@ public class PlayerController : MonoBehaviour
         _transform.position = PlayerFinalStandPlace;
         RestoreGravity();
         _hurtedStatus.RemoveCommandFromSet();
-    }
-
-    private void UIControll()
-    {
-        //血量
-        HpUI.transform.localScale = new Vector3((float)Hp / (float)MaxHp, HpUI.transform.localScale.y, HpUI.transform.localScale.z);
-        //精力條
-        SkillPowerUI.transform.localScale = new Vector3((float)_battleSystem.SkillPower / (float)_battleSystem.TrueMaxSkillPower, SkillPowerUI.transform.localScale.y, SkillPowerUI.transform.localScale.z);
-        //殺戮值
-        //KillerPointUI.transform.localScale = new Vector3((float)BattleSystem.KillerPoint / (float)_battleSystem.MaxKillerPoint, KillerPointUI.transform.localScale.y, KillerPointUI.transform.localScale.z);
-        //DefendBuff
-        if (_battleSystem.isDefendBuff)
-        {
-            DefendBuffUI.SetActive(true);
-        }
-        else
-        {
-            DefendBuffUI.SetActive(false);
-        }
-        //PowerSeal
-        if (_battleSystem.isPowerSeal)
-        {
-            PowerSealUI.SetActive(true);
-        }
-        else
-        {
-            PowerSealUI.SetActive(false);
-        }
     }
 
     public float GetYVelocity()
@@ -1105,15 +1065,21 @@ public class PlayerController : MonoBehaviour
         bool ShouldChange = false;
         (int, int) ChangeValue = (7,5);
 
-        if (!isGround && !isIgnoreGravity && Rigid2D.gravityScale != 7)
+        if (!isGround && !isIgnoreGravity)
         {
-            ShouldChange = true;
-            ChangeValue = (7, 5);
+            if(Rigid2D.gravityScale != 7 || Rigid2D.drag != 5)
+            {
+                ShouldChange = true;
+                ChangeValue = (7, 5);
+            }
         }
-        if (isGround && Rigid2D.gravityScale != 0)
+        if (isGround)
         {
-            ShouldChange = true;
-            ChangeValue = (0, 20);
+            if(Rigid2D.gravityScale != 0 || Rigid2D.drag != 20)
+            {
+                ShouldChange = true;
+                ChangeValue = (0, 20);
+            }
         }
 
         if (ShouldChange)
@@ -1175,6 +1141,7 @@ public class PlayerController : MonoBehaviour
         _glidingStatus = new PlayerGlidingStatus(this, _aniController.jumpAni, _fallWaitStatus, LongFallTimerSet);
         _hurtedStatus = new PlayerHurtedStatus(this, _aniController.hurtedAni);
         _dieStatus = new PlayerDieStatus(this, _aniController.dieAni, _invincibleManager, _PlayerData, DieUI);
+        _restoreStatus = new PlayerRestoreStatus(this, _aniController.restoreAni, _itemManage);
 
         _rightMoveStatus = new PlayerRightMoveStatus(this, _aniController.runAni, Speed, Move);
         _leftMoveStatus = new PlayerLeftMoveStatus(this, _aniController.runAni, Speed, Move);
@@ -1189,21 +1156,29 @@ public class PlayerController : MonoBehaviour
         _jumpAtkStatus = new PlayerJumpAtkStatus(this, _battleSystem, _aniController.normalAtkAni);
         _strongAtkStatus = new PlayerStrongAtkStatus(this, _battleSystem, _aniController.strongAtkAni, _battleSystem.CAtkTimerSet, _battleSystem.JumpCAtkTimerSet,
             _battleSystem.CAtk, _battleSystem.JumpCAtk, IgnoreGravity, RestoreGravity, _battleSystem.StrongAtkCost);
+        _criticAtkStatus = new PlayerCriticAtkStatus(this, _battleSystem, _aniMethod, _aniController.criticAtkAni);
 
         _accumulateStatus = new PlayerAcumulateStatus(this, _battleSystem.AccumulateTimerSet, AccumulateLight);
-        _accumulateStop = new PlayerAcumulateStop(_battleSystem, _accumulateStatus, _normalAtkStatus, _jumpAtkStatus, _normalAtkStatus);
+        _accumulateStop = new PlayerAcumulateStop(_battleSystem, _accumulateStatus, _normalAtkStatus, _jumpAtkStatus, _criticAtkStatus);
         _blockStatus = new PlayerBlockStatus(this, _battleSystem, _aniController.blockAni);
+        _blockNormalAtkStatus = new PlayerBlockNormalAtkStatus(this, _battleSystem, _invincibleManager, _aniController.blockAtkAni, _buffManager.blockAtkInvincibleBuff);
+        _blockStrongAtkStatus = new PlayerBlockStrongAtkStatus(this, _battleSystem, _invincibleManager, _aniController.blockAtkAni, _buffManager.blockAtkInvincibleBuff);
 
         _changeItem = new PlayerChangeItem(_itemManage);
         _aimLineAnimation = new PlayerAimLineAnimation(_battleSystem);
         _leftWalkThrow = new PlayerLeftWalkThrowStatus(this, _aniController.walkThrowAni, _battleSystem);
         _rightWalkThrow = new PlayerRightWalkThrowStatus(this, _aniController.walkThrowAni, _battleSystem);
 
+        _cocktailStatus = new PlayerCocktailCriticAtkStatus(this, _battleSystem, _aniController.cocktailAni);
         _useNormalItemStatus = new PlayerUseNormalItemStatus(this, _aniController.useItemAni);
         _throwItemStatus = new PlayerUseThrowItemStatus(this, _aniController.throwItemAni, _aimLineAnimation, _inputManager, _battleSystem);
         _jumpThrowStatus = new PlayerJumpThrowStatus(this, _aniController.jumpThrowAni, _battleSystem);
-        _useItemStart = new PlayerUseItemStart(_itemManage, _useNormalItemStatus, _throwItemStatus, _leftWalkThrow, _rightWalkThrow, _jumpThrowStatus, _inputManager);
+        _useItemStart = new PlayerUseItemStart(_itemManage, _useNormalItemStatus, _throwItemStatus, _leftWalkThrow, _rightWalkThrow, _jumpThrowStatus, 
+            _inputManager, _accumulateStatus, _cocktailStatus);
         _aimStop = new PlayerAimStop(_throwItemStatus);
+
+        _beBlockStatus = new PlayerBeBlockStatus(this, _battleSystem, _aniController.beBlockAtkAni);
+        _weakStatus = new PlayerWeakStatus(this, _battleSystem, _aniController.weakAni);
 
         _itemManage.InisializeItemClass(_battleSystem, _useNormalItemStatus, _buffManager);
 
@@ -1224,9 +1199,11 @@ public class PlayerController : MonoBehaviour
             _inputManager.SubscribeCommand(Command.Dash, CommandType.Pressed, _dashStatus);
             _inputManager.SubscribeCommand(Command.Shoot, CommandType.Pressed, _shootStatus);
             _inputManager.SubscribeCommand(Command.Block, CommandType.Pressed, _blockStatus);
+            _inputManager.SubscribeCommand(Command.NormalAtk, CommandType.Pressed, _blockNormalAtkStatus);
+            _inputManager.SubscribeCommand(Command.StrongAtk, CommandType.Pressed, _blockStrongAtkStatus);
+            _inputManager.SubscribeCommand(Command.Restore, CommandType.Pressed, _restoreStatus);
 
             /*
-            _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Restore, PlayerCommandManager.CommandType.Pressed, Restore);
             _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.ItemWindow, PlayerCommandManager.CommandType.Pressed, OpenItemWindow);
             _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Interact, PlayerCommandManager.CommandType.Pressed, Interact);
             _playerCommandManager.SubscribeCommand(PlayerCommandManager.Command.Interact, PlayerCommandManager.CommandType.Up, InteractEnd);*/

@@ -99,9 +99,7 @@ public class PlayerAtkController : MonoBehaviour, IAttackObject
             if (!_battleSystem.isBlock && collision.GetComponent<BlockJudgement>().CanBlock)
             {
                 HitSomething = false;
-                BattleSystem.isBeBlockSuccess = true;
-                BackgroundSystem.CantPause = true;
-                BackgroundSystem.GameSpeed = 0;
+                _ = _battleSystem.BeginBeBlockBulletTime();
                 CanHurt = false;
             }
         }

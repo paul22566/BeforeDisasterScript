@@ -43,14 +43,65 @@ public class AngleCaculate : MonoBehaviour
         }
 
         //計算角度
-        Tan = AbsDistanceY / AbsDistanceX;
-        TargetRotate = Mathf.Atan(Tan);
-        TargetRotate = TargetRotate / Mathf.PI * 180;
+        if (AbsDistanceX != 0)
+        {
+            Tan = AbsDistanceY / AbsDistanceX;
+            TargetRotate = Mathf.Atan(Tan);
+            TargetRotate = TargetRotate / Mathf.PI * 180;
+        }
 
         //套用狀況
         switch (ImageDirection)
         {
             case "R":
+                if (AbsDistanceX == 0)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        return 90;
+                    }
+                    else
+                    {
+                        return 270;
+                    }
+                }
+
+                if (AtPlayerRight)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        //不用算
+                    }
+                    else
+                    {
+                        TargetRotate = 360 - TargetRotate;
+                    }
+                }
+                if (AtPlayerLeft)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        TargetRotate = 180 - TargetRotate;
+                    }
+                    else
+                    {
+                        TargetRotate = 180 + TargetRotate;
+                    }
+                }
+                break;
+            case "L":
+                if (AbsDistanceX == 0)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        return 270;
+                    }
+                    else
+                    {
+                        return 90;
+                    }
+                }
+
                 if (AtPlayerRight)
                 {
                     if (isHigherThanPlayer)
@@ -59,38 +110,14 @@ public class AngleCaculate : MonoBehaviour
                     }
                     else
                     {
-                        //不用算
-                    }
-                }
-                if (AtPlayerLeft)
-                {
-                    if (isHigherThanPlayer)
-                    {
-                        TargetRotate = 360 - TargetRotate;
-                    }
-                    else
-                    {
-                        //正常算
-                    }
-                }
-                break;
-            case "L":
-                if (AtPlayerRight)
-                {
-                    if (!isHigherThanPlayer)
-                    {
-                        TargetRotate = 360 - TargetRotate;
-                    }
-                    else
-                    {
-                        //正常算
-                    }
-                }
-                if (AtPlayerLeft)
-                {
-                    if (isHigherThanPlayer)
-                    {
                         TargetRotate = 180 - TargetRotate;
+                    }
+                }
+                if (AtPlayerLeft)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        TargetRotate = 360 - TargetRotate;
                     }
                     else
                     {
@@ -150,47 +177,38 @@ public class AngleCaculate : MonoBehaviour
         }
 
         //計算角度
-        Tan = AbsDistanceY / AbsDistanceX;
-        TargetRotate = Mathf.Atan(Tan);
-        TargetRotate = TargetRotate / Mathf.PI * 180;
+        if(AbsDistanceX != 0)
+        {
+            Tan = AbsDistanceY / AbsDistanceX;
+            TargetRotate = Mathf.Atan(Tan);
+            TargetRotate = TargetRotate / Mathf.PI * 180;
+        }
 
         //套用狀況
         switch (ImageDirection)
         {
             case "R":
-                if (AtPlayerRight)
+                if (AbsDistanceX == 0)
                 {
                     if (isHigherThanPlayer)
                     {
-                        TargetRotate = 180 + TargetRotate;
+                        return 90 + CorrectionNumber;
                     }
                     else
+                    {
+                        return 270 + CorrectionNumber;
+                    }
+                }
+
+                if (AtPlayerRight)
+                {
+                    if (isHigherThanPlayer)
                     {
                         //不用算
                     }
-                }
-                if (AtPlayerLeft)
-                {
-                    if (isHigherThanPlayer)
-                    {
-                        TargetRotate = 360 - TargetRotate;
-                    }
                     else
                     {
-                        //正常算
-                    }
-                }
-                break;
-            case "L":
-                if (AtPlayerRight)
-                {
-                    if (!isHigherThanPlayer)
-                    {
                         TargetRotate = 360 - TargetRotate;
-                    }
-                    else
-                    {
-                        //正常算
                     }
                 }
                 if (AtPlayerLeft)
@@ -201,12 +219,49 @@ public class AngleCaculate : MonoBehaviour
                     }
                     else
                     {
+                        TargetRotate = 180 + TargetRotate;
+                    }
+                }
+                break;
+            case "L":
+                if (AbsDistanceX == 0)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        return 270 - CorrectionNumber;
+                    }
+                    else
+                    {
+                        return 90 - CorrectionNumber;
+                    }
+                }
+
+                if (AtPlayerRight)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        TargetRotate = 180 + TargetRotate;
+                    }
+                    else
+                    {
+                        TargetRotate = 180 - TargetRotate;
+                    }
+                }
+                if (AtPlayerLeft)
+                {
+                    if (isHigherThanPlayer)
+                    {
+                        TargetRotate = 360 - TargetRotate;
+                    }
+                    else
+                    {
                         //不用算
                     }
                 }
                 break;
         }
 
+        //補正值以預設朝向往上多少計算
         //最終補正
         switch (ImageDirection)
         {

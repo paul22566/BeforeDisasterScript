@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public abstract class Monster : Creature
@@ -10,27 +11,21 @@ public abstract class Monster : Creature
     public Transform _transform;
     protected MonsterStatusManager _statusManager;
     protected Vector3 _targetPosition;
-
-    protected float DistanceWithTargetX = 0;
-    protected float DistanceWithTargetY = 0;
+    public enum Status { Alert, Walk, Run, Attack, Cooldown }
+    public float DistanceWithTargetX { get; protected set; } = 0;
+    public float DistanceWithTargetY { get; protected set; } = 0;
     protected Action OnCalculateParameter;
 
-    public abstract void StatusJudge();
     public abstract void ParameterCalculate();
     public abstract void HurtedControll(int damage);
-    public virtual (object strategy, AnimationController ani)? GetStrategyAndAniForStatus(IMonsterStatus status)
-    {
-        return null; // 預設不提供任何策略
-    }
-
-    public void UpdateLogic()
+    public void UpdateLogic(float deltaTime)
     {
         ParameterCalculate();
-        _statusManager.StatusJudgeInManager(StatusJudge);
+        _statusManager.Update(deltaTime);
     }
-    public void DoAction()
+    public void FixedUpdateLogic(float deltaTime)
     {
-        _statusManager.DoAction();
+        _statusManager.FixedUpdate(deltaTime);
     }
     public void Move(float Speed, float DeltaTime)
     {
@@ -47,127 +42,125 @@ public abstract class Monster : Creature
 public class MonsterStatusManager
 {
     private Monster _monster;
-    private IMonsterStatus status;
-    public IMonsterStatus preStatus;
+    private IMonsterStatus _currentStatus;
 
     public MonsterStatusManager(Monster m, IMonsterStatus initStatus)
     {
         _monster = m;
-        SetPreStatus(initStatus);
-        ConfirmStatus();
+        ChangeStatus(initStatus);
     }
 
-    public void StatusJudgeInManager(Action judgeFunc)
+    public void ChangeStatus(IMonsterStatus newStatus)
     {
-        if (status.leaveJudge(_monster))
+        _currentStatus?.End(_monster);
+        _currentStatus = newStatus;
+        _currentStatus.Begin(_monster);
+    }
+    public void Update(float deltaTime)
+    {
+        if(_currentStatus == null)
+            return;
+
+        _currentStatus.Execute(_monster, deltaTime);
+
+        var next = _currentStatus.CheckTransition();
+        if(next != null && next != _currentStatus)
         {
-            judgeFunc?.Invoke();
+            ChangeStatus(next);
         }
     }
-
-    public void SetPreStatus(IMonsterStatus _status)
+    public void FixedUpdate(float deltaTime)
     {
-        preStatus = _status;
-    }
+        if (_currentStatus == null)
+            return;
 
-    public bool ConfirmStatus()
-    {
-        if (status == preStatus || preStatus == null)
-        {
-            return false;
-        }
-
-        if (status != null)
-        {
-            status.End(_monster);
-        }
-        status = preStatus;
-
-        var data = _monster.GetStrategyAndAniForStatus(preStatus);
-
-        if (data != null)
-        {
-            var (strategyObj, aniController) = data.Value;
-
-            // 泛型策略處理：AtkStrategy
-            if (status is IStrategyUser<IMonsterAtkStrategy> atkUser && strategyObj is IMonsterAtkStrategy atk)
-            {
-                atkUser.SetStrategy(atk);
-                atkUser.SetAni(aniController);
-            }
-        }
-
-        status.Begin(_monster);
-
-        preStatus = null;
-        return true;
-    }
-
-    public bool EqualStatus(IMonsterStatus _status)
-    {
-        return status == _status;
-    }
-
-    public void DoAction()
-    {
-        status.action(_monster);
+        _currentStatus.FixedExecute(_monster, deltaTime);
     }
 }
 
-
-public class MonsterAlertStatus: IMonsterStatus, IStrategyUser<IMonsterPatrolStrategy>
+[Serializable]
+public class TransitionRule
 {
-    private IMonsterPatrolStrategy _strategy;
-    private Func<bool> _breakJudge;
-    private AnimationController _aniController;
-    public MonsterAlertStatus(IMonsterPatrolStrategy strategy, Func<bool> breakJudge, AnimationController aniController)
-    {
-        SetStrategy(strategy);
-        _breakJudge = breakJudge;
-        _aniController = aniController;
-    }
+    public Monster.Status FromStatus;
+    public TransitionCondition Condition;
+    public Monster.Status ToStatus;
+}
+public struct StatusTransition
+{
+    public Func<bool> Condition;
+    public IMonsterStatus TargetStatus;
 
-    public void action(Monster monster)
+    public StatusTransition(Func<bool> condition, IMonsterStatus targetStatus)
     {
-        _aniController.AniTurnFace(monster.face);
-        _strategy.Patrol();
-    }
-    public bool leaveJudge(Monster monster)
-    {
-        return _breakJudge?.Invoke() ?? false;
-    }
-    public void Begin(Monster monster)
-    {
-        _aniController.AniTurnFace(monster.face);
-    }
-    public void End(Monster monster)
-    {
-        _aniController.AniStop();
-        if (_strategy is IStrategyReset resettable)
-        {
-            resettable.StrategyReset();
-        }
-    }
-
-    public void SetAni(AnimationController ani)
-    {
-        _aniController = ani;
-    }
-    public void SetStrategy(IMonsterPatrolStrategy strategy)
-    {
-        _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        Condition = condition;
+        TargetStatus = targetStatus;
     }
 }
-public class MonsterWalkPatrolStrategy: IMonsterPatrolStrategy, IStrategyReset
+
+public abstract class BaseMonsterStatus : IMonsterStatus
+{
+    protected readonly List<StatusTransition> transitions = new();
+
+    public void AddTransition(Func<bool> condition, IMonsterStatus target)
+    {
+        transitions.Add(new StatusTransition(condition, target));
+    }
+
+    public virtual void Begin(Monster monster) { }
+    public virtual void Execute(Monster monster, float deltaTime) { }
+    public virtual void FixedExecute(Monster monster, float deltaTime) { }
+    public virtual void End(Monster monster) { }
+
+    public IMonsterStatus CheckTransition()
+    {
+        foreach (var t in transitions)
+        {
+            if (t.Condition()) return t.TargetStatus;
+        }
+        return null; // 沒有符合條件
+    }
+}
+public abstract class BaseMonsterStrategy
+{
+    protected AnimationController _ani;
+
+    public abstract void Begin();
+    public abstract void End();
+}
+
+public class MonsterAlertStatus : BaseMonsterStatus
+{
+    private IMonsterPatrolStrategy _currentStrategy;
+    public MonsterAlertStatus(IMonsterPatrolStrategy strategy, AnimationController aniController)
+    {
+        _currentStrategy = strategy;
+    }
+
+    public override void Execute(Monster monster, float deltaTime)
+    {
+        _currentStrategy.Execute(deltaTime);
+    }
+    public override void FixedExecute(Monster monster, float deltaTime)
+    {
+        _currentStrategy.FixedExecute(deltaTime);
+    }
+    public override void Begin(Monster monster)
+    {
+        ((BaseMonsterStrategy)_currentStrategy).Begin();
+    }
+    public override void End(Monster monster)
+    {
+        ((BaseMonsterStrategy)_currentStrategy).End();
+    }
+}
+public class MonsterWalkPatrolStrategy: BaseMonsterStrategy, IMonsterPatrolStrategy
 {
     private float _speed;
     private float _totalTime;
     private float _timer;
-    private float _deltaTime = Time.fixedDeltaTime;
     private Queue<TimedEvent> _eventsQueue;
     private bool isMoving;
     private Creature.Face _initialFace;
-    private AnimationController _ani;
     private Monster monster;
 
     public MonsterWalkPatrolStrategy(Monster m, AnimationController ani, Monster.Face initFace, float speed, float time)
@@ -177,12 +170,26 @@ public class MonsterWalkPatrolStrategy: IMonsterPatrolStrategy, IStrategyReset
         _initialFace = initFace;
         _speed = speed;
         _totalTime = time;
-        StrategyReset();
     }
 
-    public void Patrol()
+    public override void Begin()
     {
-        _timer -= _deltaTime;
+        _ani.AniPlay();
+        _ani.AniTurnFace(monster.face);
+
+        StrategyReset();
+    }
+    public override void End()
+    {
+        _ani.AniStop();
+    }
+    public void Execute(float deltaTime)
+    {
+        _ani.AniTurnFace(monster.face);
+    }
+    public void FixedExecute(float deltaTime)
+    {
+        _timer -= deltaTime;
 
         if (_eventsQueue.Count > 0 && _timer <= _eventsQueue.Peek().TriggerTime)
         {
@@ -195,21 +202,20 @@ public class MonsterWalkPatrolStrategy: IMonsterPatrolStrategy, IStrategyReset
             switch (monster.face)
             {
                 case Monster.Face.Right:
-                    monster.Move(_speed, _deltaTime);
+                    monster.Move(_speed, deltaTime);
                     break;
                 case Monster.Face.Left:
-                    monster.Move(-_speed, _deltaTime);
+                    monster.Move(-_speed, deltaTime);
                     break;
             }
         }
     }
 
-    public void StrategyReset()
+    private void StrategyReset()
     {
         _timer = _totalTime;
         ResetTimeEvent();
     }
-
     private void ResetTimeEvent()
     {
         _eventsQueue = new Queue<TimedEvent>(
@@ -223,19 +229,18 @@ public class MonsterWalkPatrolStrategy: IMonsterPatrolStrategy, IStrategyReset
             }
         );
     }
-
-    public void BeginMove()
+    private void BeginMove()
     {
         isMoving = true;
         monster.TurnFace(_initialFace);
         _ani.ChangeAnimator("isSlowWalk", "true");
     }
-    public void StopMove()
+    private void StopMove()
     {
         isMoving = false;
         _ani.ChangeAnimator("isSlowWalk", "false");
     }
-    public void TurnFaceAndMove()
+    private void TurnFaceAndMove()
     {
         isMoving = true;
         monster.TurnFace();
@@ -243,310 +248,250 @@ public class MonsterWalkPatrolStrategy: IMonsterPatrolStrategy, IStrategyReset
     }
 }
 
-public class MonsterWalkStatus: IMonsterStatus
+public class MonsterWalkStatus: BaseMonsterStatus
 {
     private float Speed;
-    private float DeltaTime = Time.fixedDeltaTime;
-    private Func<bool> _breakJudge;
     private AnimationController _aniController;
 
-    public MonsterWalkStatus(float speed, Func<bool> breakJudge, AnimationController aniController)
+    public MonsterWalkStatus(float speed, AnimationController aniController)
     {
         Speed = speed;
-        _breakJudge = breakJudge;
         _aniController = aniController;
     }
-
-    public void action(Monster monster)
+    public override void Execute(Monster monster, float deltaTime)
     {
         monster.FaceTarget();
         _aniController.AniTurnFace(monster.face);
-
+    }
+    public override void FixedExecute(Monster monster, float deltaTime)
+    {
         switch (monster.face)
         {
             case Creature.Face.Left:
-                monster.Move(-Speed, DeltaTime);
+                monster.Move(-Speed, deltaTime);
                 break;
             case Creature.Face.Right:
-                monster.Move(Speed, DeltaTime);
+                monster.Move(Speed, deltaTime);
                 break;
         }
     }
-
-    public bool leaveJudge(Monster monster)
-    {
-        return _breakJudge?.Invoke() ?? false;
-    }
-
-    public void Begin(Monster monster)
+    public override void Begin(Monster monster)
     {
         _aniController.AniPlay();
         _aniController.AniTurnFace(monster.face);
     }
-
-    public void End(Monster monster)
+    public override void End(Monster monster)
     {
         _aniController.AniStop();
     }
 }
-public class MonsterRunStatus : IMonsterStatus
+public class MonsterRunStatus : BaseMonsterStatus
 {
     private float Speed;
-    private float DeltaTime = Time.fixedDeltaTime;
-    private Func<bool> _breakJudge;
     private AnimationController _aniController;
 
-    public MonsterRunStatus(float speed, Func<bool> breakJudge, AnimationController aniController)
+    public MonsterRunStatus(float speed, AnimationController aniController)
     {
         Speed = speed;
-        _breakJudge = breakJudge;
         _aniController = aniController;
     }
 
-    public void action(Monster monster)
+    public override void Execute(Monster monster, float deltaTime)
     {
         monster.FaceTarget();
         _aniController.AniTurnFace(monster.face);
-
+    }
+    public override void FixedExecute(Monster monster, float deltaTime)
+    {
         switch (monster.face)
         {
             case Monster.Face.Left:
-                monster.Move(-Speed, DeltaTime);
+                monster.Move(-Speed, deltaTime);
                 break;
             case Monster.Face.Right:
-                monster.Move(Speed, DeltaTime);
+                monster.Move(Speed, deltaTime);
                 break;
         }
     }
-
-    public bool leaveJudge(Monster monster)
-    {
-        return _breakJudge?.Invoke() ?? false;
-    }
-
-    public void Begin(Monster monster)
+    public override void Begin(Monster monster)
     {
         _aniController.AniPlay();
         _aniController.AniTurnFace(monster.face);
     }
-
-    public void End(Monster monster)
+    public override void End(Monster monster)
     {
         _aniController.AniStop();
     }
 }
 
-public class MonsterCooldownStatus : IMonsterStatus, IStrategyUser<IMonsterCooldownStrategy>, IOnceStrategyUser
+public class MonsterCooldownStatus : BaseMonsterStatus, IOnceStrategyUser
 {
-    private bool _cooldownEnd;
-    private IMonsterCooldownStrategy _strategy;
-    private Func<bool> _breakJudge;
-    private AnimationController _aniController;
+    private IMonsterCooldownStrategy _currentStrategy;
 
-    public MonsterCooldownStatus(IMonsterCooldownStrategy strategy, Func<bool> breakJudge, AnimationController aniController)
+    public MonsterCooldownStatus(IMonsterCooldownStrategy strategy)
     {
-        _breakJudge = breakJudge;
-        _aniController = aniController;
-        _strategy = strategy;
+        _currentStrategy = strategy;
+    }
+    public void AddDefaultNextStatus(IMonsterStatus DefaultNextStatus)
+    {
+        AddTransition(DetectStrategyEnd, DefaultNextStatus);
     }
 
-    public void action(Monster monster)
+    public override void Execute(Monster monster, float deltaTime)
     {
-        _aniController.AniTurnFace(monster.face);
-        _strategy.CooldownAction(monster, StrategyEnd);
+        _currentStrategy.Execute(monster, deltaTime);
     }
-
-    public bool leaveJudge(Monster monster)
+    public override void FixedExecute(Monster monster, float deltaTime)
     {
-        bool breakResult = false;
-
-        try
-        {
-            breakResult = _breakJudge?.Invoke() ?? false;
-        }
-        catch (Exception ex)
-        {
-            Debug.Log("Invoke 失敗：" + ex.Message);
-        }
-
-        if (breakResult || _cooldownEnd)
-        {
-            return true;
-        }
-
-        return false;
+        _currentStrategy.FixedExecute(monster, deltaTime);
     }
-
-    public void Begin(Monster monster)
+    public override void Begin(Monster monster)
     {
-        _aniController.AniPlay();
-        _aniController.AniTurnFace(monster.face);
+        ((BaseMonsterStrategy)_currentStrategy).Begin();
     }
-
-    public void End(Monster monster)
+    public override void End(Monster monster)
     {
-        _cooldownEnd = false;
-        _aniController.AniStop();
-        if (_strategy is IStrategyReset resettable)
-        {
-            resettable.StrategyReset();
-        }
+        ((BaseMonsterStrategy)_currentStrategy).End();
     }
-
-    public void SetStrategy(IMonsterCooldownStrategy strategy)
+    public bool DetectStrategyEnd()
     {
-        _strategy = strategy ?? throw new ArgumentException("Invalid strategy type for MonsterAtkStatus");
-    }
-    public void SetAni(AnimationController ani)
-    {
-        _aniController = ani;
-    }
-    public void StrategyEnd()
-    {
-        _cooldownEnd = true;
+        return ((IOnceStrategy)_currentStrategy).ExecuteComplete();
     }
 }
-public class MonsterWaitCooldownStrategy : IMonsterCooldownStrategy
+public class MonsterWaitCooldownStrategy : BaseMonsterStrategy, IMonsterCooldownStrategy, IOnceStrategy
 {
+    private Monster monster;
     private float _totalTime;
     private float _timer;
     private bool EndTrigger;
-    private float DeltaTime = Time.fixedDeltaTime;
 
-    public MonsterWaitCooldownStrategy(float time)
+    public MonsterWaitCooldownStrategy(Monster m, AnimationController ani, float time)
     {
+        monster = m;
+        _ani = ani;
         _totalTime = time;
-        ResetValue();
     }
 
-    public void CooldownAction(Monster monster, Action endAction)
+    public override void Begin()
     {
-        _timer -= DeltaTime;
+        _ani.AniPlay();
+        _ani.AniTurnFace(monster.face);
 
+        _timer = _totalTime;
+        EndTrigger = false;
+    }
+    public override void End()
+    {
+        _ani.AniStop();
+    }
+    public void Execute(Monster monster, float deltaTime)
+    {
         monster.FaceTarget();
+        _ani.AniTurnFace(monster.face);
+    }
+    public void FixedExecute(Monster monster, float deltaTime)
+    {
+        _timer -= deltaTime;
 
         if (_timer <= 0 && !EndTrigger)
         {
             EndTrigger = true;
-            endAction();
         }
     }
 
-    private void ResetValue()
+    public bool ExecuteComplete()
     {
-        _timer = _totalTime;
-        EndTrigger = false;
+        return EndTrigger;
     }
 }
-public class MonsterGoBackCooldownStrategy : IMonsterCooldownStrategy, IStrategyReset
+public class MonsterGoBackCooldownStrategy : BaseMonsterStrategy, IMonsterCooldownStrategy, IOnceStrategy
 {
+    private Monster monster;
     private float _speed;
     private float _totalTime;
     private float _timer;
     private bool EndTrigger;
-    private float DeltaTime = Time.fixedDeltaTime;
 
-    public MonsterGoBackCooldownStrategy(float speed, float time)
+    public MonsterGoBackCooldownStrategy(Monster m, AnimationController ani, float speed, float time)
     {
+        monster = m;
+        _ani = ani;
         _speed = speed;
         _totalTime = time;
-        StrategyReset();
     }
 
-    public void CooldownAction(Monster monster, Action endAction)
+    public override void Begin()
     {
-        _timer -= DeltaTime;
+        _ani.AniPlay();
+        _ani.AniTurnFace(monster.face);
 
+        _timer = _totalTime;
+        EndTrigger = false;
+    }
+    public override void End()
+    {
+        _ani.AniStop();
+    }
+
+    public void Execute(Monster monster, float deltaTime)
+    {
         monster.FaceTarget();
+        _ani.AniTurnFace(monster.face);
+    }
+    public void FixedExecute(Monster monster, float deltaTime)
+    {
+        _timer -= deltaTime;
 
         switch (monster.face)
         {
             case Monster.Face.Left:
-                monster.Move(_speed, DeltaTime);
+                monster.Move(_speed, deltaTime);
                 break;
             case Monster.Face.Right:
-                monster.Move(-_speed, DeltaTime);
+                monster.Move(-_speed, deltaTime);
                 break;
         }
 
         if (_timer <= 0 && !EndTrigger)
         {
             EndTrigger = true;
-            endAction();
         }
     }
-
-    public void StrategyReset()
+    public bool ExecuteComplete()
     {
-        _timer = _totalTime;
-        EndTrigger = false;
+        return EndTrigger;
     }
 }
 
-public class MonsterAtkStatus : IMonsterStatus, IStrategyUser<IMonsterAtkStrategy>, IOnceStrategyUser
+public class MonsterAtkStatus : BaseMonsterStatus, IOnceStrategyUser
 {
-    private bool _atkEnd = false;
-    private IMonsterAtkStrategy _strategy;
-    private Func<bool> _breakJudge;
-    private AnimationController _aniController;
+    private IMonsterAtkStrategy _currentStrategy;
+    private Func<IMonsterAtkStrategy> _strategyJudge;
 
-    public MonsterAtkStatus(IMonsterAtkStrategy strategy, Func<bool> breakJudge, AnimationController aniController)
+    public MonsterAtkStatus(Func<IMonsterAtkStrategy> strategyJudge)
     {
-        SetStrategy(strategy);
-        _breakJudge = breakJudge;
-        _aniController = aniController;
+        _strategyJudge = strategyJudge;
     }
-
-    public void action(Monster monster)
+    public void AddDefaultNextStatus(IMonsterStatus DefaultNextStatus)
     {
-        if(!_atkEnd)
-            _strategy.Atk(StrategyEnd);
-    }
-    public bool leaveJudge(Monster monster)
-    {
-        bool breakResult = false;
-
-        try
-        {
-            breakResult = _breakJudge?.Invoke() ?? false;
-        }
-        catch (Exception ex)
-        {
-            Debug.Log("Invoke 失敗：" + ex.Message);
-        }
-
-        if (breakResult || _atkEnd)
-        {
-            return true;
-        }
-
-        return false;
-    }
-    public void Begin(Monster monster)
-    {
-        _aniController.AniPlay();
-        _aniController.AniTurnFace(monster.face);
-    }
-    public void End(Monster monster)
-    {
-        _atkEnd = false;
-        if (_strategy is IStrategyReset resettable)
-        {
-            resettable.StrategyReset();
-        }
-        _aniController.AniStop();
+        AddTransition(DetectStrategyEnd, DefaultNextStatus);
     }
 
-    public void SetStrategy(IMonsterAtkStrategy strategy)
+    public override void FixedExecute(Monster monster, float deltaTime)
     {
-        _strategy = strategy ?? throw new ArgumentException("Invalid strategy type for MonsterAtkStatus");
+        _currentStrategy.FixedExecute(deltaTime);
     }
-    public void SetAni(AnimationController ani)
+    public override void Begin(Monster monster)
     {
-        _aniController = ani;
+        _currentStrategy = _strategyJudge?.Invoke();
+        ((BaseMonsterStrategy)_currentStrategy).Begin();
     }
-    public void StrategyEnd()
+    public override void End(Monster monster)
     {
-        _atkEnd = true;
+        ((BaseMonsterStrategy)_currentStrategy).End();
+    }
+    public bool DetectStrategyEnd()
+    {
+        return ((IOnceStrategy)_currentStrategy).ExecuteComplete();
     }
 }

@@ -2,28 +2,37 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class Test:MonoBehaviour
 {
-    public Transform a; 
-    private Transform b; 
-    private Transform c;
+    private float Timer = 1f;
 
-    public Transform d;
     private void Start()
     {
-        b = a;
-        a = d;
-        c = b;
+        Invoke("aaa", 3);
 
-        Debug.Log(a);
-        Debug.Log(b);
-        Debug.Log(c);
+        StartCoroutine("timer");
     }
 
-    public void aaaa(int a)
+    private void Update()
     {
-        print(a);
+        Timer -= Time.deltaTime;
+
+        if (Timer <= 0)
+        {
+            this.enabled = false;
+        }
+    }
+
+    private void aaa()
+    {
+        Debug.Log("aaa");
+    }
+
+    IEnumerator timer()
+    {
+        yield return new WaitForSeconds(3);
+
+        Debug.Log("bbb");
     }
 }

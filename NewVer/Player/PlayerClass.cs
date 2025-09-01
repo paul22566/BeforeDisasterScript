@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using static PlayerStatus;
 
@@ -58,7 +56,7 @@ public class PlayerAcumulateStop : IObserver
             return;
         }
 
-        if (_Accumulate.isAccumulateComplete && _battleSystem.SkillPower >= 600 && PlayerController.isGround)
+        if (_Accumulate.isAccumulateComplete && _battleSystem.SkillPower >= _battleSystem.CriticAtkCost && PlayerController.isGround)
         {
             _CriticAtk.AddCommandToSet();
         }
@@ -79,14 +77,18 @@ public class PlayerUseItemStart : IObserver
 {
     private ItemManage _itemManager;
     private InputManager _inputManager;
+    private PlayerAcumulateStatus _Accumulate;
     private PlayerUseNormalItemStatus UseNormalItem;
     private PlayerUseThrowItemStatus UseThrowItem;
     private PlayerLeftWalkThrowStatus LeftWalkThrow;
     private PlayerRightWalkThrowStatus RightWalkThrow;
     private PlayerJumpThrowStatus JumpAtk;
+    private PlayerCocktailCriticAtkStatus CocktailCriticAtk;
+    private bool isInitializeSuccess;
 
     public PlayerUseItemStart(ItemManage manager, PlayerUseNormalItemStatus useNormalItem, PlayerUseThrowItemStatus useThrowItem,
-        PlayerLeftWalkThrowStatus leftWalkThrow, PlayerRightWalkThrowStatus rightWalkThrow, PlayerJumpThrowStatus jumpAtk, InputManager inputManager)
+        PlayerLeftWalkThrowStatus leftWalkThrow, PlayerRightWalkThrowStatus rightWalkThrow, PlayerJumpThrowStatus jumpAtk, InputManager inputManager,
+        PlayerAcumulateStatus accumulate, PlayerCocktailCriticAtkStatus cocktail)
     {
         _itemManager = manager;
         UseNormalItem = useNormalItem;
@@ -95,11 +97,23 @@ public class PlayerUseItemStart : IObserver
         RightWalkThrow = rightWalkThrow;
         JumpAtk = jumpAtk;
         _inputManager = inputManager;
+        _Accumulate = accumulate;
+        CocktailCriticAtk = cocktail;
+
+        if(_itemManager != null && UseNormalItem != null && UseThrowItem != null && LeftWalkThrow != null &&
+        RightWalkThrow != null && JumpAtk != null && _inputManager != null &&  _Accumulate != null && CocktailCriticAtk != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("UseItemStartInitialFail");
+        }
     }
 
     public void ReceiveNotify()
     {
-        if (!GameEvent.TutorialComplete)
+        if (!GameEvent.TutorialComplete || !isInitializeSuccess)
             return;
 
         switch (_itemManager.NowPrepareItem)
@@ -114,24 +128,30 @@ public class PlayerUseItemStart : IObserver
                     JumpAtk.AddCommandToSet();
                     return;
                 }
-                if (!_inputManager.WalkThrowCheck())
+                if (_inputManager.WalkThrowCheck())
                 {
-                    UseThrowItem.SetItem(_itemManager._cocktail, _itemManager._cocktail);
-                    UseThrowItem.AddCommandToSet();
+                    switch (PlayerController._player.face)
+                    {
+                        case Creature.Face.Right:
+                            RightWalkThrow.SetItem(_itemManager._cocktail, _itemManager._cocktail);
+                            RightWalkThrow.AddCommandToSet();
+                            break;
+                        case Creature.Face.Left:
+                            LeftWalkThrow.SetItem(_itemManager._cocktail, _itemManager._cocktail);
+                            LeftWalkThrow.AddCommandToSet();
+                            break;
+                    }
+                    return;
+                }
+                if (_Accumulate.isAccumulateComplete)
+                {
+                    CocktailCriticAtk.SetItem(_itemManager._cocktail);
+                    CocktailCriticAtk.AddCommandToSet();
                     return;
                 }
 
-                switch (PlayerController._player.face)
-                {
-                    case Creature.Face.Right:
-                        RightWalkThrow.SetItem(_itemManager._cocktail, _itemManager._cocktail);
-                        RightWalkThrow.AddCommandToSet();
-                        break;
-                    case Creature.Face.Left:
-                        LeftWalkThrow.SetItem(_itemManager._cocktail, _itemManager._cocktail);
-                        LeftWalkThrow.AddCommandToSet();
-                        break;
-                }
+                UseThrowItem.SetItem(_itemManager._cocktail, _itemManager._cocktail);
+                UseThrowItem.AddCommandToSet();
                 break;
             case ItemManage.UsefulItem.ExplosionBottle:
                 if (_itemManager.ExplosionBottleNumber <= 0)
@@ -200,7 +220,7 @@ public class PlayerAimStop : IObserver
             return;
         }
 
-        _throwItemStatus.ThrowSuccess();
+        _throwItemStatus.BeginThrow();
     }
 }
 public class PlayerChangeItem: IObserver

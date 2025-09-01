@@ -12,7 +12,8 @@ public abstract class PlayerStatus
     {
         Wait, Gliding, LeftMove, RightMove, Accumulate, NormalAtk, StrongAtk, 
         CriticAtk, Jump, JumpAtk, JumpThrow, Restore, UseNormalItem, UseThrowItem, 
-        Dash, Shoot, Block,BlockAtk, WalkThrow, Hurted, FallWait, Die
+        Dash, Shoot, Block,BlockAtk, BeBlock, Weak, WalkThrow, Hurted, FallWait, Die,
+        ImpulseJump
     };
     public enum OperateType { Update, FixedUpdate, Both}
     protected PlayerController _controller;
@@ -176,6 +177,9 @@ public class PlayerWaitStatus : PlayerStatus, IPlayerAniUser
         CommandReplaceSet.Add(Status.Restore);
         CommandReplaceSet.Add(Status.Dash);
         CommandReplaceSet.Add(Status.Block);
+        CommandReplaceSet.Add(Status.BeBlock);
+        CommandReplaceSet.Add(Status.Weak);
+        CommandReplaceSet.Add(Status.ImpulseJump);
     }
     public override void Begin()
     {
@@ -267,6 +271,8 @@ public class PlayerGlidingStatus : PlayerStatus, IPlayerAniUser
         CommandReplaceSet.Add(Status.Die);
         CommandReplaceSet.Add(Status.StrongAtk);
         CommandReplaceSet.Add(Status.Dash);
+        CommandReplaceSet.Add(Status.Weak);
+        CommandReplaceSet.Add(Status.ImpulseJump);
     }
     public override void Begin()
     {
@@ -413,11 +419,13 @@ public class PlayerLeftMoveStatus : PlayerStatus, IObserver, IPlayerAniUser
         CommandReplaceSet.Add(Status.NormalAtk);
         CommandReplaceSet.Add(Status.StrongAtk);
         CommandReplaceSet.Add(Status.CriticAtk);
+        CommandReplaceSet.Add(Status.Weak);
         CommandReplaceSet.Add(Status.UseNormalItem);
         CommandReplaceSet.Add(Status.UseThrowItem);
         CommandReplaceSet.Add(Status.Restore);
         CommandReplaceSet.Add(Status.Dash);
         CommandReplaceSet.Add(Status.Block);
+        CommandReplaceSet.Add(Status.ImpulseJump);
     }
     public override void Begin()
     {
@@ -519,11 +527,13 @@ public class PlayerRightMoveStatus : PlayerStatus, IObserver, IPlayerAniUser
         CommandReplaceSet.Add(Status.NormalAtk);
         CommandReplaceSet.Add(Status.StrongAtk);
         CommandReplaceSet.Add(Status.CriticAtk);
+        CommandReplaceSet.Add(Status.Weak);
         CommandReplaceSet.Add(Status.UseNormalItem);
         CommandReplaceSet.Add(Status.UseThrowItem);
         CommandReplaceSet.Add(Status.Restore);
         CommandReplaceSet.Add(Status.Dash);
         CommandReplaceSet.Add(Status.Block);
+        CommandReplaceSet.Add(Status.ImpulseJump);
     }
     public override void Begin()
     {
@@ -579,7 +589,7 @@ public class PlayerLeftWalkThrowStatus : PlayerStatus, IPlayerAniUser
 {
     private PlayerWalkThrowAni _ani;
     private Item _item;
-    private IWalkThrowItem _throwItem;
+    private IThrowItem _throwItem;
     private float Timer;
     private float TimerSet;
     private Vector3 AppearPlace;
@@ -641,7 +651,7 @@ public class PlayerLeftWalkThrowStatus : PlayerStatus, IPlayerAniUser
             timedEvent.Callback?.Invoke();
         }
     }
-    public void SetItem(Item item, IWalkThrowItem throwItem)
+    public void SetItem(Item item, IThrowItem throwItem)
     {
         _item = item;
         TimerSet = _item.GetUseTimer();
@@ -661,6 +671,7 @@ public class PlayerLeftWalkThrowStatus : PlayerStatus, IPlayerAniUser
     {
         Vector3 location = _controller._transform.localPosition;
         location = new Vector3(location.x - AppearPlace.x, location.y + AppearPlace.y, location.z);
+        _throwItem.UseSuccess();
         _throwItem.WalkThrow(Power, location);
     }
     private void Event2()
@@ -672,7 +683,7 @@ public class PlayerRightWalkThrowStatus : PlayerStatus, IPlayerAniUser
 {
     private PlayerWalkThrowAni _ani;
     private Item _item;
-    private IWalkThrowItem _throwItem;
+    private IThrowItem _throwItem;
     private float Timer;
     private float TimerSet;
     private Vector3 AppearPlace;
@@ -735,7 +746,7 @@ public class PlayerRightWalkThrowStatus : PlayerStatus, IPlayerAniUser
             timedEvent.Callback?.Invoke();
         }
     }
-    public void SetItem(Item item, IWalkThrowItem throwItem)
+    public void SetItem(Item item, IThrowItem throwItem)
     {
         _item = item;
         TimerSet = _item.GetUseTimer();
@@ -755,6 +766,7 @@ public class PlayerRightWalkThrowStatus : PlayerStatus, IPlayerAniUser
     {
         Vector3 location = _controller._transform.localPosition;
         location = new Vector3(location.x + AppearPlace.x, location.y + AppearPlace.y, location.z);
+        _throwItem.UseSuccess();
         _throwItem.WalkThrow(Power, location);
     }
     private void Event2()
@@ -903,8 +915,10 @@ public class PlayerJumpStatus : PlayerStatus, IObserver, IPlayerAniUser
 
         CommandReplaceSet.Add(Status.Hurted);
         CommandReplaceSet.Add(Status.Die);
+        CommandReplaceSet.Add(Status.Weak);
         CommandReplaceSet.Add(Status.StrongAtk);
         CommandReplaceSet.Add(Status.Dash);
+        CommandReplaceSet.Add(Status.ImpulseJump);
     }
     public override void Begin()
     {
@@ -1201,6 +1215,7 @@ public class PlayerNormalAtkStatus :PlayerStatus, IPlayerAniUser
         _statusType = status;
         _operateType = operateType;
 
+        CommandReplaceSet.Add(Status.BeBlock);
         CommandReplaceSet.Add(Status.Hurted);
         CommandReplaceSet.Add(Status.Die);
     }
@@ -1463,6 +1478,8 @@ public class PlayerJumpAtkStatus : PlayerStatus, IPlayerAniUser
         CommandCoexistSet.Add(Status.Gliding);
         CommandCoexistSet.Add(Status.Jump);
 
+        CommandReplaceSet.Add(Status.BeBlock);
+        CommandReplaceSet.Add(Status.Weak);
         CommandReplaceSet.Add(Status.Hurted);
         CommandReplaceSet.Add(Status.Die);
     }
@@ -1577,6 +1594,7 @@ public class PlayerShootStatus : PlayerStatus, IObserver, IPlayerAniUser
         CommandReplaceSet.Add(Status.Hurted);
         CommandReplaceSet.Add(Status.Die);
         CommandReplaceSet.Add(Status.Dash);
+        CommandReplaceSet.Add(Status.ImpulseJump);
     }
     public override void Begin()
     {
@@ -1667,6 +1685,158 @@ public class PlayerShootStatus : PlayerStatus, IObserver, IPlayerAniUser
     }
 }
 
+public class PlayerCriticAtkStatus : PlayerStatus, IPlayerAniUser
+{
+    private BattleSystem _battleSystem;
+    private PlayerCriticAtkAni _ani;
+    private AniMethod _aniMethod;
+    private GameObject CriticAtkPredictPrefab;
+    private Transform CriticAtkPredictObject;
+    private GameObject CriticAtk;
+    private float TimerSet;
+    private float Timer;
+    private Vector3 CriticAtkPredictPosition;
+    private Queue<TimedEvent> _eventQueue;
+
+    public PlayerCriticAtkStatus(PlayerController controller, BattleSystem battle, AniMethod aniMethod, PlayerCriticAtkAni Ani)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _aniMethod = aniMethod;
+        _ani = Ani;
+
+        Inisialize(Status.CriticAtk, OperateType.FixedUpdate);
+
+        TimerSet = _battleSystem.CriticAtkTimerSet;
+        CriticAtkPredictPrefab = _battleSystem.CriticAtkPredictObject;
+        CriticAtk = _battleSystem.CriticAtk;
+
+        if (_controller != null && _battleSystem != null && _ani != null && _aniMethod != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Hurted);
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _battleSystem.UseSkillPower(_battleSystem.CriticAtkCost);
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        CriticAtkPredictObject = GameObject.Instantiate(CriticAtkPredictPrefab, _controller._transform.localPosition, Quaternion.identity).transform;
+        Timer = TimerSet;
+        ResetQueue();
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.StopAnimation(_ani);
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+    //大招位置計算
+    private Vector3 CalculateCriticAtkPosition()
+    {
+        float PositionX = 0;
+        float PositionY = 0;
+
+        PositionX = (_controller._transform.position.x + CriticAtkPredictObject.position.x) / 2;
+        PositionY = (_controller._transform.position.y + CriticAtkPredictObject.position.y) / 2;
+
+        return new Vector3(PositionX, PositionY, 0);
+    }
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = TimerSet - 0.97f, Callback = Event1 },
+                new TimedEvent { TriggerTime = TimerSet - 1f, Callback = Event2 },
+                new TimedEvent { TriggerTime = TimerSet - 2.9f, Callback = Event3 },
+                new TimedEvent { TriggerTime = 0, Callback = Event4 }
+            }
+        );
+    }
+    private void Event1()
+    {
+        CriticAtkPredictPosition = CriticAtkPredictObject.position;
+        float CriticAtkPredictAngle = AngleCaculate.CaculateAngle("R", CriticAtkPredictObject, _controller._transform);
+        SpriteRenderer atkSprite;
+        switch (PlayerController._player.face)
+        {
+            case  Creature.Face.Left:
+                atkSprite = GameObject.Instantiate(CriticAtk, CalculateCriticAtkPosition(), Quaternion.Euler(0, 0, CriticAtkPredictAngle))?.GetComponent<SpriteRenderer>();
+                atkSprite.flipX = true;
+                break;
+            case Creature.Face.Right:
+                GameObject.Instantiate(CriticAtk, CalculateCriticAtkPosition(), Quaternion.Euler(0, 0, CriticAtkPredictAngle));
+                break;
+        }
+    }
+    private void Event2()
+    {
+        _aniMethod.OpenFlash();
+        if (CriticAtkPredictObject != null)
+        {
+            //預設距離15
+            _controller._transform.position = CriticAtkPredictPosition;
+            GameObject.Destroy(CriticAtkPredictObject.gameObject);
+        }
+        _ani.ChangeAnimator("isChange", "true");
+    }
+    private void Event3()
+    {
+        _aniMethod.OpenFlash();
+    }
+    private void Event4()
+    {
+        RemoveCommandFromSet();
+    }
+}
 public class PlayerUseNormalItemStatus : PlayerStatus, IPlayerAniUser
 {
     private INormalItem _item;
@@ -1734,7 +1904,7 @@ public class PlayerUseThrowItemStatus: PlayerStatus, IAimSystemUser, IPlayerAniU
     private float AimSpeed;
     private float AimLimit;
     public bool isAimBegin;
-    public bool isThrowSuccess;
+    public bool isBeginSuccess;
     private float Timer;
     private float TimerSet;
     private Vector3 AppearPlace;
@@ -1799,12 +1969,12 @@ public class PlayerUseThrowItemStatus: PlayerStatus, IAimSystemUser, IPlayerAniU
     {
         _controller.StopAnimation(_ani);
         isAimBegin = false;
-        isThrowSuccess = false;
+        isBeginSuccess = false;
         _InputManager.UnSubscribeAimInput(this);
     }
     public override void Execute(float deltaTime)
     {
-        if (isThrowSuccess)
+        if (isBeginSuccess)
         {
             Timer -= deltaTime;
         }
@@ -1824,9 +1994,9 @@ public class PlayerUseThrowItemStatus: PlayerStatus, IAimSystemUser, IPlayerAniU
         TimerSet = _item.GetUseTimer();
         _throwItem = throwItem;
     }
-    public void ThrowSuccess()
+    public void BeginThrow()
     {
-        isThrowSuccess = true;
+        isBeginSuccess = true;
         AimLineAni.AniClose(PlayerController._player.face);
         _ani.ChangeAnimator("Throw", "true");
     }
@@ -1927,6 +2097,7 @@ public class PlayerUseThrowItemStatus: PlayerStatus, IAimSystemUser, IPlayerAniU
                 break;
         }
 
+        _throwItem.UseSuccess();
         _throwItem.Throw(PowerCalculate(AimPower, PlayerController._player.face), location);
     }
     private void Event2()
@@ -1938,7 +2109,7 @@ public class PlayerJumpThrowStatus : PlayerStatus, IPlayerAniUser
 {
     private PlayerJumpThrowAni _ani;
     private Item _item;
-    private IWalkThrowItem _throwItem;
+    private IThrowItem _throwItem;
     private float Timer;
     private float TimerSet;
     private Vector3 AppearPlace;
@@ -2002,7 +2173,7 @@ public class PlayerJumpThrowStatus : PlayerStatus, IPlayerAniUser
             timedEvent.Callback?.Invoke();
         }
     }
-    public void SetItem(Item item, IWalkThrowItem throwItem)
+    public void SetItem(Item item, IThrowItem throwItem)
     {
         _item = item;
         TimerSet = _item.GetUseTimer();
@@ -2034,7 +2205,134 @@ public class PlayerJumpThrowStatus : PlayerStatus, IPlayerAniUser
                 break;
         }
         location = new Vector3(location.x + AppearPlace.x, location.y + AppearPlace.y, location.z);
+        _throwItem.UseSuccess();
         _throwItem.WalkThrow(power, location);
+    }
+    private void Event2()
+    {
+        RemoveCommandFromSet();
+    }
+}
+public class PlayerRestoreStatus : PlayerStatus, IPlayerAniUser, IObserver
+{
+    private ItemManage _itemManage;
+    private PlayerRestoreAni _ani;
+    private float TimerSet;
+    private float Timer;
+    private bool BeginRestore;
+    private float RestoreHP;
+    private Queue<TimedEvent> _eventQueue;
+
+    public PlayerRestoreStatus(PlayerController controller, PlayerRestoreAni Ani, ItemManage itemManage)
+    {
+        _controller = controller;
+        _itemManage = itemManage;
+        _ani = Ani;
+
+        Inisialize(Status.Block, OperateType.FixedUpdate);
+
+        RestoreHP = _controller.RestoreHP;
+        TimerSet = _controller.RestoreTimerSet;
+
+        if (_controller != null && _ani != null && _itemManage != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public void ReceiveNotify()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        if (_itemManage.RestoreItemNumber > 0 && PlayerController.isGround)
+        {
+            AddCommandToSet();
+        }
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Dash);
+        CommandReplaceSet.Add(Status.Hurted);
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _itemManage.RestoreItemNumber -= 1;
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        Timer = TimerSet;
+        ResetQueue();
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        BeginRestore = false;
+        _controller.StopAnimation(_ani);
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (BeginRestore)
+        {
+            _controller.Hp += RestoreHP;
+        }
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = TimerSet - 0.5f, Callback = Event1 },
+                new TimedEvent { TriggerTime = 0, Callback = Event2 }
+            }
+        );
+    }
+    private void Event1()
+    {
+        BeginRestore = true;
     }
     private void Event2()
     {
@@ -2168,6 +2466,15 @@ public class PlayerBlockStatus : PlayerStatus, IPlayerAniUser, IObserver
 
         TimerSet = _battleSystem.BlockTimerSet;
         BlockPrefab = _battleSystem.Block;
+
+        if (_controller != null && _battleSystem != null && _ani!= null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
     }
 
     public int GetAnimationPriority()
@@ -2180,6 +2487,11 @@ public class PlayerBlockStatus : PlayerStatus, IPlayerAniUser, IObserver
     }
     public void ReceiveNotify()
     {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
         if (GameEvent.TutorialComplete && PlayerController.isGround && _battleSystem.CanAtk)
         {
             AddCommandToSet();
@@ -2196,6 +2508,11 @@ public class PlayerBlockStatus : PlayerStatus, IPlayerAniUser, IObserver
     }
     public override void Begin()
     {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
         _controller.SetAnimation(_ani);
         _controller.PlayAnimation();
         _ani.AniTurnFace(PlayerController._player.face);
@@ -2205,12 +2522,22 @@ public class PlayerBlockStatus : PlayerStatus, IPlayerAniUser, IObserver
     }
     public override void End()
     {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
         _controller.StopAnimation(_ani);
         _battleSystem.BeginAtkCoolDown();
         _battleSystem.isBlock = false;
     }
     public override void FixedExecute(float deltaTime)
     {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
         Timer -= deltaTime;
 
         if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
@@ -2241,7 +2568,7 @@ public class PlayerBlockStatus : PlayerStatus, IPlayerAniUser, IObserver
         PlayerBlockJudgement block;
 
         block = GameObject.Instantiate(BlockPrefab, _controller._transform.localPosition, Quaternion.identity)?.GetComponent<PlayerBlockJudgement>();
-        block.BlockSuccess += _battleSystem.BeginBulletTime;
+        block.BlockSuccess += _battleSystem.BeginBlockSuccessBulletTime;
         block.BlockSuccess += BlockSuccess;
         switch (PlayerController._player.face)
         {
@@ -2267,24 +2594,38 @@ public class PlayerBlockStatus : PlayerStatus, IPlayerAniUser, IObserver
 }
 public class PlayerBlockNormalAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
 {
+    private InvincibleManager _invincibleManager;
     private BattleSystem _battleSystem;
-    private PlayerNormalAtkAni _ani;
-    private GameObject NormalAtkPrefab1;
-    private GameObject NormalAtkPrefab2;
+    private PlayerBlockAtkAni _ani;
+    private Buff InvincibleBuff;
+    private GameObject AtkPrefab1;
+    private GameObject AtkPrefab2;
     private float TimerSet;
     private float Timer;
     private Queue<TimedEvent> _eventQueue;
-    private bool isUseAlterAtk;
-    public PlayerBlockNormalAtkStatus(PlayerController controller, BattleSystem battle, PlayerNormalAtkAni Ani)
+
+    public PlayerBlockNormalAtkStatus(PlayerController controller, BattleSystem battle, InvincibleManager invincible, PlayerBlockAtkAni Ani, Buff invincibleBuff)
     {
         _controller = controller;
         _battleSystem = battle;
+        _invincibleManager = invincible;
         _ani = Ani;
+        InvincibleBuff = invincibleBuff;
+
         Inisialize(Status.BlockAtk, OperateType.FixedUpdate);
-        TimerSet = _battleSystem.AtkTimerSet;
-        Reset();
-        NormalAtkPrefab1 = _battleSystem.NormalAtk;
-        NormalAtkPrefab2 = _battleSystem.AlterAtk;
+
+        TimerSet = _battleSystem.BlockNormalAtkTimerSet;
+        AtkPrefab1 = _battleSystem.BlockNormalAtkAni;
+        AtkPrefab2 = _battleSystem.BlockNormalAtk;
+
+        if (_controller != null && _battleSystem != null && _invincibleManager != null && _ani != null && InvincibleBuff != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
     }
 
     public int GetAnimationPriority()
@@ -2297,9 +2638,14 @@ public class PlayerBlockNormalAtkStatus : PlayerStatus, IPlayerAniUser, IObserve
     }
     public void ReceiveNotify()
     {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
         if (_battleSystem.isBlockSuccess)
         {
-            _battleSystem.StopBulletTime();
+            _battleSystem.StopBlockSuccessBulletTime();
             AddCommandToSet();
         }
     }
@@ -2310,34 +2656,39 @@ public class PlayerBlockNormalAtkStatus : PlayerStatus, IPlayerAniUser, IObserve
     }
     public override void Begin()
     {
-        isUseAlterAtk = _battleSystem.JudgeUseAlterNormalAtk();
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
 
         _controller.SetAnimation(_ani);
         _controller.PlayAnimation();
+        _ani.ChangeAnimator("Type", "1");
         _ani.AniTurnFace(PlayerController._player.face);
 
-        if (isUseAlterAtk)
-        {
-            _ani.ChangeAnimator("Alter", "true");
-        }
+        _invincibleManager.AddInvincible(InvincibleManager.InvincibleType.Absolute);
+
+        Reset();
     }
     public override void End()
     {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
         _controller.StopAnimation(_ani);
-        if (isUseAlterAtk)
-        {
-            _battleSystem.StopCalculateAlterAtk();
-            _ani.ChangeAnimator("Alter", "false");
-        }
-        else
-        {
-            _battleSystem.BeginCalculateAlterAtk();
-        }
         _battleSystem.BeginAtkCoolDown();
-        Reset();
+        _invincibleManager.RemoveInvincible(InvincibleManager.InvincibleType.Absolute);
+        InvincibleBuff.AddBuffToSet();
     }
     public override void FixedExecute(float deltaTime)
     {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
         Timer -= deltaTime;
 
         if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
@@ -2353,7 +2704,157 @@ public class PlayerBlockNormalAtkStatus : PlayerStatus, IPlayerAniUser, IObserve
         _eventQueue = new Queue<TimedEvent>(
             new[]
             {
-                new TimedEvent { TriggerTime = TimerSet - 0.067f, Callback = Event1 },
+                new TimedEvent { TriggerTime = TimerSet, Callback = Event1 },
+                new TimedEvent { TriggerTime = TimerSet - 1.15f, Callback = Event2 },
+                new TimedEvent { TriggerTime = TimerSet - 1.6f, Callback = Event3 }
+            }
+        );
+    }
+    private void Event1()
+    {
+        Transform atk;
+        atk = GameObject.Instantiate(AtkPrefab1, _controller._transform.position, Quaternion.identity).transform;
+        switch (PlayerController._player.face)
+        {
+            case Creature.Face.Right:
+                atk.localScale = new Vector3(1, 1, 1);
+                break;
+            case Creature.Face.Left:
+                atk.localScale = new Vector3(-1, 1, 1);
+                break;
+        }
+    }
+    private void Event2()
+    {
+        Transform atk;
+        atk = GameObject.Instantiate(AtkPrefab2, _controller._transform.position, Quaternion.identity).transform;
+        switch (PlayerController._player.face)
+        {
+            case Creature.Face.Right:
+                atk.localScale = new Vector3(1, 1, 1);
+                break;
+            case Creature.Face.Left:
+                atk.localScale = new Vector3(-1, 1, 1);
+                break;
+        }
+    }
+    private void Event3()
+    {
+        RemoveCommandFromSet();
+    }
+}
+public class PlayerBlockStrongAtkStatus : PlayerStatus, IPlayerAniUser, IObserver
+{
+    private InvincibleManager _invincibleManager;
+    private BattleSystem _battleSystem;
+    private PlayerBlockAtkAni _ani;
+    private Buff InvincibleBuff;
+    private GameObject AtkPrefab;
+    private float TimerSet;
+    private float Timer;
+    private Queue<TimedEvent> _eventQueue;
+
+    public PlayerBlockStrongAtkStatus(PlayerController controller, BattleSystem battle, InvincibleManager invincible, PlayerBlockAtkAni Ani, Buff invincibleBuff)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _invincibleManager = invincible;
+        InvincibleBuff = invincibleBuff;
+        _ani = Ani;
+
+        Inisialize(Status.BlockAtk, OperateType.FixedUpdate);
+
+        TimerSet = _battleSystem.BlockStrongAtkTimerSet;
+        AtkPrefab = _battleSystem.BlockStrongAtk;
+
+        if (_controller != null && _battleSystem != null && _invincibleManager != null && _ani != null && InvincibleBuff != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public void ReceiveNotify()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        if (_battleSystem.isBlockSuccess && _battleSystem.SkillPower >= _battleSystem.StrongAtkCost)
+        {
+            _battleSystem.StopBlockSuccessBulletTime();
+            AddCommandToSet();
+        }
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.ChangeAnimator("Type", "2");
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        _battleSystem.UseSkillPower(_battleSystem.StrongAtkCost);
+        _invincibleManager.AddInvincible(InvincibleManager.InvincibleType.Absolute);
+
+        Timer = TimerSet;
+        ResetQueue();
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.StopAnimation(_ani);
+        _battleSystem.BeginAtkCoolDown();
+        _invincibleManager.RemoveInvincible(InvincibleManager.InvincibleType.Absolute);
+        InvincibleBuff.AddBuffToSet();
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = TimerSet - 1.55f, Callback = Event1 },
                 new TimedEvent { TriggerTime = 0, Callback = Event2 },
             }
         );
@@ -2361,14 +2862,7 @@ public class PlayerBlockNormalAtkStatus : PlayerStatus, IPlayerAniUser, IObserve
     private void Event1()
     {
         Transform atk;
-        if (!isUseAlterAtk)
-        {
-            atk = GameObject.Instantiate(NormalAtkPrefab1, _controller._transform.position, Quaternion.identity).transform;
-        }
-        else
-        {
-            atk = GameObject.Instantiate(NormalAtkPrefab2, _controller._transform.position, Quaternion.identity).transform;
-        }
+        atk = GameObject.Instantiate(AtkPrefab, _controller._transform.position, Quaternion.identity).transform;
         switch (PlayerController._player.face)
         {
             case Creature.Face.Right:
@@ -2382,5 +2876,435 @@ public class PlayerBlockNormalAtkStatus : PlayerStatus, IPlayerAniUser, IObserve
     private void Event2()
     {
         RemoveCommandFromSet();
+    }
+}
+public class PlayerBeBlockStatus : PlayerStatus, IPlayerAniUser
+{
+    private BattleSystem _battleSystem;
+    private PlayerBeBlockAni _ani;
+    private float TimerSet;
+    private float Timer;
+
+    public PlayerBeBlockStatus(PlayerController controller, BattleSystem battle, PlayerBeBlockAni Ani)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _ani = Ani;
+
+        Inisialize(Status.BeBlock, OperateType.FixedUpdate);
+
+        TimerSet = _battleSystem.BeBlockTimerSet;
+
+        if (_controller != null && _battleSystem != null && _ani != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Hurted);
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        Timer = TimerSet;
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.StopAnimation(_ani);
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (Timer <= 0)
+        {
+            RemoveCommandFromSet();
+        }
+    }
+}
+public class PlayerWeakStatus : PlayerStatus, IPlayerAniUser
+{
+    private BattleSystem _battleSystem;
+    private PlayerWeakAni _ani;
+    private float TimerSet;
+    private float Timer;
+    private bool touchGround;
+    private Queue<TimedEvent> _eventQueue;
+
+    public PlayerWeakStatus(PlayerController controller, BattleSystem battle, PlayerWeakAni Ani)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _ani = Ani;
+
+        Inisialize(Status.Weak, OperateType.Both);
+
+        TimerSet = _battleSystem.WeakTimerSet;
+
+        if (_controller != null && _battleSystem != null && _ani != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Hurted);
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        touchGround = false;
+        Timer = TimerSet;
+        ResetQueue();
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.StopAnimation(_ani);
+    }
+    public override void Execute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        if (PlayerController.isGround)
+        {
+            _ani.ChangeAnimator("isGround", "true");
+        }
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        if (!isInitializeSuccess || !touchGround)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = TimerSet - 1.5f, Callback = Event1 },
+                new TimedEvent { TriggerTime = 0, Callback = Event2 },
+            }
+        );
+    }
+    private void Event1()
+    {
+        _ani.ChangeAnimator("GetUp", "true");
+    }
+    private void Event2()
+    {
+        RemoveCommandFromSet();
+    }
+}
+
+public class PlayerCocktailCriticAtkStatus : PlayerStatus, IPlayerAniUser
+{
+    private BattleSystem _battleSystem;
+    private IThrowItem _item;
+    private PlayerCocktailCriticAtkAni _ani;
+    private GameObject AtkPrefab;
+    private float TimerSet;
+    private float Timer;
+    private Queue<TimedEvent> _eventQueue;
+
+    public PlayerCocktailCriticAtkStatus(PlayerController controller, BattleSystem battle, PlayerCocktailCriticAtkAni Ani)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _ani = Ani;
+
+        Inisialize(Status.UseThrowItem, OperateType.FixedUpdate);
+
+        TimerSet = _battleSystem.CocktailCriticAtkTimerSet;
+        AtkPrefab = _battleSystem.CocktailCriticAtk;
+
+        if (_controller != null && _battleSystem != null && _ani != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Hurted);
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        Timer = TimerSet;
+        ResetQueue();
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.StopAnimation(_ani);
+    }
+    public override void FixedExecute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (_eventQueue.Count() > 0 && _eventQueue.Peek().TriggerTime >= Timer)
+        {
+            var timedEvent = _eventQueue.Dequeue();
+            timedEvent.Callback?.Invoke();
+        }
+    }
+
+    public void SetItem(IThrowItem item)
+    {
+        _item = item;
+    }
+    private void ResetQueue()
+    {
+        _eventQueue = new Queue<TimedEvent>(
+            new[]
+            {
+                new TimedEvent { TriggerTime = TimerSet - 0.9f, Callback = Event1 },
+                new TimedEvent { TriggerTime = 0, Callback = Event2 },
+            }
+        );
+    }
+    private void Event1()
+    {
+        _item.UseSuccess();
+        switch (PlayerController._player.face)
+        {
+            case Creature.Face.Left:
+                Transform atk = GameObject.Instantiate(AtkPrefab, _controller._transform.position, Quaternion.identity).transform;
+                atk.localScale = new Vector3(-1, 1, 1);
+                break;
+            case Creature.Face.Right:
+                GameObject.Instantiate(AtkPrefab, _controller._transform.position, Quaternion.identity);
+                break;
+        }
+    }
+    private void Event2()
+    {
+        RemoveCommandFromSet();
+    }
+}
+public class PlayerImpulseJumpStatus : PlayerStatus, IPlayerAniUser
+{
+    private BattleSystem _battleSystem;
+    private IThrowItem _item;
+    private PlayerCocktailCriticAtkAni _ani;
+    private GameObject Explosion;
+    private float TimerSet;
+    private float Timer;
+    private Vector2 ImpulsePower;
+    private Vector3 AppearPlace;
+
+    public PlayerImpulseJumpStatus(PlayerController controller, BattleSystem battle, PlayerCocktailCriticAtkAni Ani)
+    {
+        _controller = controller;
+        _battleSystem = battle;
+        _ani = Ani;
+
+        Inisialize(Status.UseThrowItem, OperateType.Update);
+
+        TimerSet = _battleSystem.ImpulseJumpTimerSet;
+        Explosion = _battleSystem.ImpulseJumpExplosion;
+        ImpulsePower = _battleSystem.ImpulseJumpPower;
+        AppearPlace = _battleSystem.ImpulseExplosionAppear;
+
+        if (_controller != null && _battleSystem != null && _ani != null)
+        {
+            isInitializeSuccess = true;
+        }
+        else
+        {
+            Debug.LogWarning("InitialPlayerStatusFail");
+        }
+    }
+
+    public int GetAnimationPriority()
+    {
+        return _ani.PlayPriority;
+    }
+    public AnimationController GetAnimation()
+    {
+        return _ani;
+    }
+    public override void Inisialize(Status status, OperateType operateType)
+    {
+        _statusType = status;
+        _operateType = operateType;
+
+        CommandReplaceSet.Add(Status.Hurted);
+        CommandReplaceSet.Add(Status.Die);
+    }
+    public override void Begin()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.SetAnimation(_ani);
+        _controller.PlayAnimation();
+        _ani.AniTurnFace(PlayerController._player.face);
+
+        Timer = TimerSet;
+
+        _item.UseSuccess();
+
+        Vector3 place = _controller._transform.localPosition;
+        Vector2 power = ImpulsePower;
+        switch (PlayerController._player.face)
+        {
+            case Creature.Face.Left:
+                ImpulsePower = new Vector2(-ImpulsePower.x, ImpulsePower.y);
+                place = new Vector2(place.x - AppearPlace.x, place.y + AppearPlace.y);
+                break;
+            case Creature.Face.Right:
+                place = new Vector2(place.x + AppearPlace.x, place.y + AppearPlace.y);
+                break;
+        }
+        GameObject.Instantiate(Explosion, place, Quaternion.identity);
+        _controller.ForceRigidBody(power, ForceMode2D.Impulse);
+    }
+    public override void End()
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        _controller.StopAnimation(_ani);
+    }
+    public override void Execute(float deltaTime)
+    {
+        if (!isInitializeSuccess)
+        {
+            return;
+        }
+
+        Timer -= deltaTime;
+
+        if (PlayerController.isGround)
+        {
+            RemoveCommandFromSet();
+        }
+
+        if (Timer <= 0)
+        {
+            RemoveCommandFromSet();
+        }
+    }
+
+    public void SetItem(IThrowItem item)
+    {
+        _item = item;
     }
 }

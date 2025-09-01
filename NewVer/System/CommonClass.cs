@@ -32,6 +32,7 @@ public interface IInputSource
     bool IsLeftMoveUp(NewKeyCodeManager manager);
     bool IsRightMovePressing(NewKeyCodeManager manager);
     bool IsRightMoveUp(NewKeyCodeManager manager);
+    bool IsNormalAttackPressed(NewKeyCodeManager manager);
     bool IsNormalAttackPressing(NewKeyCodeManager manager);
     bool IsNormalAttackUp(NewKeyCodeManager manager);
     bool IsStrongAttackPressed(NewKeyCodeManager manager);

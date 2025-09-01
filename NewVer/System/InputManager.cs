@@ -43,6 +43,10 @@ public class InputManager : MonoBehaviour
             _commandManager.ExecuteCommand(PlayerCommandManager.Command.RightMove, PlayerCommandManager.CommandType.Up);
         }
 
+        if (NowInputSource.IsNormalAttackPressed(_keyCodeManager))
+        {
+            _commandManager.ExecuteCommand(PlayerCommandManager.Command.NormalAtk, PlayerCommandManager.CommandType.Pressed);
+        }
         if (NowInputSource.IsNormalAttackPressing(_keyCodeManager))
         {
             _commandManager.ExecuteCommand(PlayerCommandManager.Command.NormalAtk, PlayerCommandManager.CommandType.Pressing);

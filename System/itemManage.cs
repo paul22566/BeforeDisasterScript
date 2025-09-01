@@ -379,10 +379,8 @@ public abstract class Item
 }
 public interface IThrowItem
 {
+    public void UseSuccess();
     public void Throw((float, float) power, Vector3 Location);
-}
-public interface IWalkThrowItem
-{
     public void WalkThrow((float, float) power, Vector3 Location);
 }
 public interface INormalItem
@@ -390,7 +388,7 @@ public interface INormalItem
     void Begin();
     void Using(float deltaTime);
 }
-public class ExplosionBottle : Item, IThrowItem, IWalkThrowItem
+public class ExplosionBottle : Item, IThrowItem
 {
     private ItemManage _itemManger;
     private ThrowItemController _itemObject;
@@ -403,23 +401,23 @@ public class ExplosionBottle : Item, IThrowItem, IWalkThrowItem
         _itemObject = itemObject;
         UseTimerSet = battle.ThrowTimerSet;
     }
-    public void Throw((float, float) power, Vector3 Location)
+    public void UseSuccess()
     {
         _itemManger.ExplosionBottleNumber -= 1;
-
+    }
+    public void Throw((float, float) power, Vector3 Location)
+    {
         ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
         item.ObjectThrow(power);
     }
     public void WalkThrow((float, float) power, Vector3 Location)
     {
-        _itemManger.ExplosionBottleNumber -= 1;
-
         ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
         item.isWalkThrowItem = true;
         item.ObjectThrow(power);
     }
 }
-public class Cocktail : Item, IThrowItem, IWalkThrowItem
+public class Cocktail : Item, IThrowItem
 {
     private ItemManage _itemManger;
     private ThrowItemController _itemObject;
@@ -432,17 +430,18 @@ public class Cocktail : Item, IThrowItem, IWalkThrowItem
         _itemObject = itemObject;
         UseTimerSet = battle.ThrowTimerSet;
     }
-    public void Throw((float, float) power, Vector3 Location)
+
+    public void UseSuccess()
     {
         _itemManger.CocktailNumber -= 1;
-        
+    }
+    public void Throw((float, float) power, Vector3 Location)
+    {
         ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
         item.ObjectThrow(power);
     }
     public void WalkThrow((float, float) power, Vector3 Location)
     {
-        _itemManger.CocktailNumber -= 1;
-
         ThrowItemController item = GameObject.Instantiate(_itemObject, Location, Quaternion.identity);
         item.isWalkThrowItem = true;
         item.ObjectThrow(power);

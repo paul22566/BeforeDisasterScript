@@ -13,12 +13,18 @@ public class PlayerAniController
     public PlayerHurtedAni hurtedAni;
     public PlayerNormalAtkAni normalAtkAni;
     public PlayerStrongAtkAni strongAtkAni;
+    public PlayerCriticAtkAni criticAtkAni;
     public PlayerThrowItemAni throwItemAni;
     public PlayerWalkThrowAni walkThrowAni;
     public PlayerJumpThrowAni jumpThrowAni;
     public PlayerUseItemAni useItemAni;
     public PlayerBlockAni blockAni;
-    public PlayerDieAni dieAni; 
+    public PlayerBlockAtkAni blockAtkAni;
+    public PlayerBeBlockAni beBlockAtkAni;
+    public PlayerWeakAni weakAni;
+    public PlayerDieAni dieAni;
+    public PlayerRestoreAni restoreAni;
+    public PlayerCocktailCriticAtkAni cocktailAni;
 
     public PlayerAniController(Transform _transform, float scale)
     {
@@ -29,13 +35,19 @@ public class PlayerAniController
         shootAni = new PlayerShootAni(9, _transform, scale, 4);
         normalAtkAni = new PlayerNormalAtkAni(4, _transform, scale, 4);
         strongAtkAni = new PlayerStrongAtkAni(6, _transform, scale, 1);
+        criticAtkAni = new PlayerCriticAtkAni(7, _transform, scale, 1);
         throwItemAni = new PlayerThrowItemAni(8, _transform, scale, 1);
         walkThrowAni = new PlayerWalkThrowAni(0, _transform, scale, 3);
         jumpThrowAni = new PlayerJumpThrowAni(4, _transform, scale, 4);
         useItemAni = new PlayerUseItemAni(20, _transform, scale, 1);
         blockAni = new PlayerBlockAni(10, _transform, scale, 1);
+        blockAtkAni = new PlayerBlockAtkAni(10, _transform, scale, 2);
+        beBlockAtkAni = new PlayerBeBlockAni(11, _transform, scale, 1);
+        weakAni = new PlayerWeakAni(12, _transform, scale, 1);
         hurtedAni = new PlayerHurtedAni(17, _transform, scale, 5);
         dieAni = new PlayerDieAni(18, _transform, scale, 1);
+        restoreAni = new PlayerRestoreAni(14, _transform, scale, 1);
+        cocktailAni = new PlayerCocktailCriticAtkAni(16, _transform, scale, 1);
     }
 }
 
@@ -100,6 +112,13 @@ public class PlayerNormalAtkAni : AnimationController
 public class PlayerStrongAtkAni : AnimationController
 {
     public PlayerStrongAtkAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
+public class PlayerCriticAtkAni : AnimationController
+{
+    public PlayerCriticAtkAni(int order, Transform objectTransform, float aniScale, int priority)
     {
         InitializeAni(order, objectTransform, aniScale, priority);
     }
@@ -280,6 +299,27 @@ public class PlayerBlockAni : AnimationController
         InitializeAni(order, objectTransform, aniScale, priority);
     }
 }
+public class PlayerBlockAtkAni : AnimationController
+{
+    public PlayerBlockAtkAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
+public class PlayerBeBlockAni : AnimationController
+{
+    public PlayerBeBlockAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
+public class PlayerWeakAni : AnimationController
+{
+    public PlayerWeakAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
 public class PlayerHurtedAni : AnimationController
 {
     public PlayerHurtedAni(int order, Transform objectTransform, float aniScale, int priority)
@@ -290,6 +330,20 @@ public class PlayerHurtedAni : AnimationController
 public class PlayerDieAni : AnimationController
 {
     public PlayerDieAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
+public class PlayerRestoreAni : AnimationController
+{
+    public PlayerRestoreAni(int order, Transform objectTransform, float aniScale, int priority)
+    {
+        InitializeAni(order, objectTransform, aniScale, priority);
+    }
+}
+public class PlayerCocktailCriticAtkAni : AnimationController
+{
+    public PlayerCocktailCriticAtkAni(int order, Transform objectTransform, float aniScale, int priority)
     {
         InitializeAni(order, objectTransform, aniScale, priority);
     }

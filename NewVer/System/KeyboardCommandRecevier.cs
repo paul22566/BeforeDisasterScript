@@ -21,6 +21,10 @@ public class KeyboardCommandRecevier : IInputSource
     {
         return Input.GetKeyUp(manager.KeyboardKeyCodes[PlayerCommandManager.Command.RightMove]);
     }
+    public bool IsNormalAttackPressed(NewKeyCodeManager manager)
+    {
+        return Input.GetKeyDown(manager.KeyboardKeyCodes[PlayerCommandManager.Command.NormalAtk]);
+    }
     public bool IsNormalAttackPressing(NewKeyCodeManager manager)
     {
         return Input.GetKey(manager.KeyboardKeyCodes[PlayerCommandManager.Command.NormalAtk]);
